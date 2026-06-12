@@ -1,0 +1,888 @@
+/**
+ * style.css - Design do Site de Treinos
+ * 
+ * Este arquivo define todo o estilo visual da aplicação, incluindo:
+ * 1. Temas dinâmicos baseados no body.theme-male e body.theme-female usando CSS Custom Properties (Variáveis).
+ * 2. Estilização moderna e limpa usando a fonte Outfit e design Dark Mode Premium.
+ * 3. Efeitos de Glassmorphism (efeito vidro embaçado) com gradientes discretos.
+ * 4. Responsividade total para smartphones, tablets e desktops.
+ * 5. Micro-animações para transições de cliques e hovers nos botões e cards.
+ * 
+ * Todos os códigos contêm comentários em português explicativos.
+ */
+
+/* ==========================================
+   CONFIGURAÇÃO DE FONTES & RESET DE ESTILOS
+   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+    -webkit-tap-highlight-color: transparent; /* Remove o highlight azul padrão do mobile ao clicar */
+}
+
+/* ==========================================
+   VARIÁVEIS DE COR E TEMAS (CSS CUSTOM PROPS)
+   ========================================== */
+:root {
+    /* Cores neutras base de fundo escuro */
+    --bg-dark-base: #0f111a;
+    --bg-card: rgba(26, 29, 46, 0.7);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --transition-speed: 0.3s;
+    
+    /* Configuração inicial padrão (Tema Masculino) */
+    --accent-color: #00d2ff;
+    --accent-glow: rgba(0, 210, 255, 0.15);
+    --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
+    --accent-rgb: 0, 210, 255;
+}
+
+/* Tema Masculino (Ativado por classe no body) */
+body.theme-male {
+    --bg-dark-base: #090d16;
+    --bg-card: rgba(18, 25, 41, 0.75);
+    --accent-color: #00d2ff;
+    --accent-glow: rgba(0, 210, 255, 0.15);
+    --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
+    --accent-rgb: 0, 210, 255;
+    background-color: var(--bg-dark-base);
+}
+
+/* Tema Feminino (Ativado por classe no body) */
+body.theme-female {
+    --bg-dark-base: #120b14;
+    --bg-card: rgba(31, 18, 36, 0.75);
+    --accent-color: #ff3385;
+    --accent-glow: rgba(255, 51, 133, 0.15);
+    --accent-gradient: linear-gradient(135deg, #ff3385 0%, #a800ff 100%);
+    --accent-rgb: 255, 51, 133;
+    background-color: var(--bg-dark-base);
+}
+
+/* ==========================================
+   ESTRUTURA GERAL DO SITE
+   ========================================== */
+body {
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+    background-attachment: fixed;
+    /* Adiciona um gradiente radial de fundo para dar sensação de profundidade */
+    background-image: radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb), 0.08) 0%, transparent 60%);
+    transition: background-color var(--transition-speed) ease, background-image var(--transition-speed) ease;
+}
+
+.app-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 140px 16px; /* Padding extra embaixo para não cobrir com o widget flutuante */
+}
+
+/* Cabeçalho do Aplicativo */
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.logo-section h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #ffffff 30%, var(--accent-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.logo-section p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: 4px;
+}
+
+/* ==========================================
+   INTERRUPTOR DE GÊNERO (CARDS SELETORES)
+   ========================================== */
+.gender-selector {
+    display: flex;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    padding: 6px;
+    border-radius: 30px;
+    width: 280px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.gender-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Cores e efeitos ativos dos botões de Gênero */
+.gender-btn.active#btn-gender-male {
+    background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 210, 255, 0.3);
+}
+
+.gender-btn.active#btn-gender-female {
+    background: linear-gradient(135deg, #ff3385 0%, #a800ff 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(255, 51, 133, 0.3);
+}
+
+.gender-btn:not(.active):hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================
+   SELETOR DE DIAS (TABS HORIZONTAIS)
+   ========================================== */
+.days-nav-wrapper {
+    margin-bottom: 28px;
+    overflow-x: auto;
+    scrollbar-width: none; /* Oculta a barra de rolagem no Firefox */
+    padding-bottom: 4px;
+}
+
+.days-nav-wrapper::-webkit-scrollbar {
+    display: none; /* Oculta a barra de rolagem no Chrome/Safari */
+}
+
+.days-tabs {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.day-tab-btn {
+    flex: 1;
+    min-width: 110px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 12px 10px;
+    border-radius: 16px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.day-tab-btn .day-number {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.day-tab-btn .day-muscle {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+/* Estado ativo do botão de Dia */
+.day-tab-btn.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px var(--accent-glow);
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(var(--accent-rgb), 0.02) 100%);
+    transform: translateY(-2px);
+}
+
+.day-tab-btn:hover:not(.active) {
+    border-color: rgba(var(--accent-rgb), 0.4);
+    transform: translateY(-1px);
+}
+
+/* ==========================================
+   BARRA DE PROGRESSO GLOBAL DO DIA
+   ========================================== */
+.progress-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 16px 20px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.progress-header span {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.progress-header #progress-percentage {
+    color: var(--accent-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.progress-bar-container {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-gradient);
+    border-radius: 10px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+/* Animação de brilho quando o treino chega em 100% */
+@keyframes completedPulse {
+    0% { filter: drop-shadow(0 0 2px var(--accent-color)); }
+    50% { filter: drop-shadow(0 0 10px var(--accent-color)); }
+    100% { filter: drop-shadow(0 0 2px var(--accent-color)); }
+}
+
+.progress-bar-fill.completed-glow {
+    animation: completedPulse 2s infinite ease-in-out;
+}
+
+/* ==========================================
+   DETALHES E METADADOS DO TREINO
+   ========================================== */
+.workout-info-header {
+    margin-bottom: 20px;
+}
+
+.workout-day-badge {
+    display: inline-block;
+    color: var(--accent-color);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.workout-target-group {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+}
+
+.workout-meta-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 3px solid var(--accent-color);
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.workout-meta-box svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--accent-color);
+}
+
+/* Títulos de Subseções (Ex: Ombros, Bíceps) */
+.workout-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 24px 0 12px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================
+   CARDS DE EXERCÍCIO
+   ========================================== */
+.exercises-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.exercise-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+/* Efeito de hover no card de exercício */
+.exercise-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--accent-rgb), 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25), 0 0 10px rgba(var(--accent-rgb), 0.05);
+}
+
+/* Estado do card marcado como concluído (Checkado) */
+.exercise-card.checked {
+    border-color: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: none;
+    transform: none;
+}
+
+.exercise-card.checked .exercise-name {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.exercise-card.checked .series-value {
+    color: var(--text-muted);
+}
+
+.exercise-card.checked .exercise-badge {
+    opacity: 0.4;
+}
+
+.exercise-card-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+/* Wrapper customizado para checkbox redondo moderno */
+.checkbox-wrapper {
+    position: relative;
+    width: 26px;
+    height: 26px;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    cursor: pointer;
+}
+
+.checkbox-custom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 26px;
+    width: 26px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox-custom svg {
+    width: 14px;
+    height: 14px;
+    color: #ffffff;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Checkbox hovered */
+.checkbox-wrapper:hover .checkbox-custom {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Checkbox checked */
+.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    box-shadow: 0 2px 10px var(--accent-glow);
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom svg {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Detalhes do Exercício */
+.exercise-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.exercise-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    transition: color 0.2s ease;
+}
+
+/* Emblemas de tipos de exercícios */
+.exercise-badge {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.badge-composto {
+    background: rgba(var(--accent-rgb), 0.1);
+    color: var(--accent-color);
+}
+
+.badge-isolador {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+}
+
+.badge-isometria {
+    background: rgba(234, 179, 8, 0.1);
+    color: #eab308;
+}
+
+/* Parte Direita do Card */
+.exercise-card-right {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.series-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.series-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.series-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    transition: color 0.2s ease;
+}
+
+/* ==========================================
+   CIRCUITOS E FINALIZAÇÃO METABÓLICA
+   ========================================== */
+.circuit-panel {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08) 0%, rgba(0, 0, 0, 0) 100%), var(--bg-card);
+    border: 1px dashed rgba(var(--accent-rgb), 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.circuit-header {
+    margin-bottom: 16px;
+}
+
+.circuit-badge {
+    display: inline-block;
+    background: var(--accent-gradient);
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.circuit-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.circuit-rules {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.circuit-rounds {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 12px;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.rounds-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.circuit-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.circuit-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    padding: 10px 16px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.circuit-ex-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.circuit-ex-qty {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+/* ==========================================
+   WIDGET FLUTUANTE DO CRONÔMETRO (ESTILO WATCH)
+   ========================================== */
+.timer-widget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: rgba(15, 17, 26, 0.85);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(var(--accent-rgb), 0.15);
+    border-radius: 24px;
+    padding: 16px;
+    width: 300px;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+    transition: transform 0.3s ease, border-color var(--transition-speed) ease;
+}
+
+/* Pulsação quando clica em algum exercício */
+@keyframes timerPulse {
+    0% { transform: scale(1) translateY(0); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(var(--accent-rgb), 0.15); }
+    50% { transform: scale(1.05) translateY(-5px); box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6), 0 0 25px rgba(var(--accent-rgb), 0.4); }
+    100% { transform: scale(1) translateY(0); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(var(--accent-rgb), 0.15); }
+}
+
+.timer-widget.pulse-highlight {
+    animation: timerPulse 0.8s ease-in-out;
+}
+
+/* Cor especial quando o timer termina de rodar */
+@keyframes timerEndFlash {
+    0% { border-color: var(--accent-color); background: rgba(var(--accent-rgb), 0.2); }
+    50% { border-color: #ef4444; background: rgba(239, 68, 68, 0.3); }
+    100% { border-color: var(--border-color); background: rgba(15, 17, 26, 0.85); }
+}
+
+.timer-widget.timer-finished {
+    animation: timerEndFlash 1s infinite alternate;
+}
+
+.timer-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.timer-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.timer-title svg {
+    color: var(--accent-color);
+}
+
+.timer-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Área do display de tempo e controle */
+.timer-timer-area {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.timer-time-display {
+    font-size: 2.2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums; /* Evita que o texto trema enquanto os segundos rodam */
+    letter-spacing: -1px;
+    color: var(--text-primary);
+}
+
+.timer-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Botões do Timer */
+.timer-btn {
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.timer-btn-primary {
+    background: var(--accent-gradient);
+    color: #ffffff;
+    box-shadow: 0 4px 10px var(--accent-glow);
+}
+
+.timer-btn-primary.running {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    box-shadow: none;
+}
+
+.timer-btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.timer-btn:hover {
+    transform: scale(1.08);
+}
+
+.timer-btn-primary:hover {
+    box-shadow: 0 6px 15px var(--accent-color);
+}
+
+.timer-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* Linha de progresso no topo do widget do timer */
+.timer-progress-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.timer-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 1s linear;
+}
+
+/* Opções rápidas de segundos (presets) */
+.timer-presets {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+}
+
+.timer-btn-preset {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.timer-btn-preset:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.timer-btn-preset.selected {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: rgba(var(--accent-rgb), 0.05);
+}
+
+/* ==========================================
+   BOTÃO DE APAGAR HISTÓRICO
+   ========================================== */
+.reset-history-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.btn-reset-workout {
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-reset-workout:hover {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: #ef4444;
+    transform: translateY(-1px);
+}
+
+.btn-reset-workout svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ==========================================
+   RESPONSIVIDADE (MEDIA QUERIES)
+   ========================================== */
+
+/* Telas menores (Mobile) */
+@media (max-width: 600px) {
+    .app-container {
+        padding-top: 16px;
+        padding-bottom: 160px; /* Mais espaço para o timer flutuante no celular */
+    }
+    
+    header {
+        margin-bottom: 24px;
+    }
+    
+    .logo-section h1 {
+        font-size: 1.8rem;
+    }
+    
+    .workout-target-group {
+        font-size: 1.4rem;
+    }
+    
+    .day-tab-btn {
+        min-width: 90px;
+        padding: 10px 6px;
+    }
+    
+    .day-tab-btn .day-number {
+        font-size: 0.7rem;
+    }
+    
+    .day-tab-btn .day-muscle {
+        font-size: 0.75rem;
+    }
+    
+    /* Reposiciona o cronômetro para o meio/inferior no celular de forma a não tampar a visão */
+    .timer-widget {
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        width: calc(100% - 32px);
+        border-radius: 20px;
+    }
+    
+    .exercise-card {
+        padding: 12px 16px;
+        border-radius: 14px;
+    }
+    
+    .exercise-name {
+        font-size: 0.95rem;
+    }
+    
+    .series-value {
+        font-size: 0.95rem;
+    }
+}

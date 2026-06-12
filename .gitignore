@@ -1,0 +1,15 @@
+# Arquivos do sistema (System files)
+# Ignora arquivos temporários e ocultos criados pelo sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Arquivos do editor/IDE (Editor/IDE files)
+# Ignora pastas de configuração de editores de código como VS Code ou WebStorm
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
