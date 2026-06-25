@@ -1863,8 +1863,8 @@ function anexarDeviceId(endpoint, deviceId) {
 }
 
 /**
- * Exibe uma mensagem de erro detalhada baseada na resposta de erro oficial do Spotify ou falhas de rede.
- * Garante diagnóstico claro para restrição Premium, dispositivo não encontrado ou falhas gerais.
+ * Registra uma mensagem de erro detalhada no console baseada na resposta oficial do Spotify ou falhas de rede.
+ * Isso evita a exibição de popups nativos intrusivos (alert) na tela do usuário.
  */
 function exibirErroSpotify(res, mensagemPadrao) {
     if (res && res.error) {
@@ -1872,20 +1872,20 @@ function exibirErroSpotify(res, mensagemPadrao) {
         // Erro de plano Free (Premium requerido)
         if (err.reason === 'PREMIUM_REQUIRED' || err.status === 403) {
             localStorage.setItem('spotify_user_product', 'free');
-            alert('O controle de reprodução é um recurso exclusivo para assinantes do Spotify Premium devido a limitações da API do Spotify.');
+            console.warn('O controle de reprodução é um recurso exclusivo para assinantes do Spotify Premium devido a limitações da API do Spotify.');
             return;
         }
         // Erro de dispositivo inativo ou não localizado
         if (err.reason === 'NO_ACTIVE_DEVICE' || err.status === 404) {
-            alert('Nenhum dispositivo ativo encontrado no seu Spotify. Por favor, abra o aplicativo do Spotify no seu celular/computador, comece a tocar uma música e tente novamente!');
+            console.warn('Nenhum dispositivo ativo encontrado no seu Spotify. Abra o app do Spotify no celular/computador e comece a tocar uma música.');
             return;
         }
-        // Exibe qualquer outro erro com código retornado pelo servidor do Spotify
-        alert(`Erro no Spotify: ${err.message || mensagemPadrao} (Código: ${err.status || 'N/A'})`);
+        // Registra qualquer outro erro com código retornado pelo servidor do Spotify
+        console.warn(`Erro no Spotify: ${err.message || mensagemPadrao} (Status: ${err.status || 'N/A'})`);
         return;
     }
     // Erro de rede, CORS ou preflight do Safari
-    alert(`${mensagemPadrao}. Verifique se você possui o Spotify Premium e se o aplicativo está aberto e ativo no seu aparelho.`);
+    console.warn(`${mensagemPadrao}. Verifique se você possui o Spotify Premium e se o aplicativo está aberto e ativo no seu aparelho.`);
 }
 
 /**
