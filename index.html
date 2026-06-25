@@ -6,146 +6,366 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Treino Semanal | Fitness Planner</title>
     <!-- Link para a folha de estilo CSS personalizada -->
-    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="css/style.css?v=1.0.3">
 </head>
 <body class="theme-male"> <!-- Inicia com o tema masculino por padrão -->
 
+    <!-- Barra de navegação superior para retornar ao Hub de forma rápida -->
+    <nav class="nav-bar" id="app-nav-bar" style="display: none;">
+        <!-- Botão para voltar à tela inicial -->
+        <button id="btn-back-hub" class="nav-back-btn" aria-label="Voltar para a tela inicial">
+            <!-- Ícone de Seta para a Esquerda -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Início
+        </button>
+        <!-- Título da seção ativa na barra de navegação -->
+        <span class="nav-section-title" id="nav-title-text">Treinos</span>
+        <!-- Logo minimalista do aplicativo -->
+        <div class="nav-logo">FiiW</div>
+    </nav>
+
     <div class="app-container">
         
-        <!-- ==========================================
-             CABEÇALHO E SELETOR DE GÊNERO
-             ========================================== -->
-        <header>
-            <div class="logo-section">
-                <h1>FiiW HUNTER</h1>
-                <p>Seu cronograma de treinamento de alta performance</p>
-            </div>
-            
-            <!-- Botões seletores para alternar dinamicamente entre masculino e feminino -->
-            <div class="gender-selector" id="gender-toggle-wrapper">
-                <button id="btn-gender-male" class="gender-btn active" aria-label="Selecionar treino masculino">
-                    <!-- Ícone minimalista masculino (Símbolo de Marte) -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
-                        <circle cx="10" cy="14" r="5"></circle>
-                        <line x1="19" y1="5" x2="14" y2="10"></line>
-                        <polyline points="14 5 19 5 19 10"></polyline>
-                    </svg>
-                    Masculino
-                </button>
-                <button id="btn-gender-female" class="gender-btn" aria-label="Selecionar treino feminino">
-                    <!-- Ícone minimalista feminino (Símbolo de Vênus) -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
-                        <circle cx="12" cy="9" r="5"></circle>
-                        <line x1="12" y1="14" x2="12" y2="21"></line>
-                        <line x1="9" y1="18" x2="15" y2="18"></line>
-                    </svg>
-                    Feminino
-                </button>
-            </div>
-        </header>
-
-        <!-- ==========================================
-             SELETOR DE DIAS DA SEMANA (D1 A D5)
-             ========================================== -->
-        <nav class="days-nav-wrapper">
-            <div class="days-tabs" id="days-selector">
-                <!-- Os botões de dias (Dia 1 ao Dia 5) serão injetados de forma dinâmica pelo JS -->
-            </div>
-        </nav>
-
-        <!-- ==========================================
-             BARRA DE PROGRESSO DO TREINO DO DIA
-             ========================================== -->
-        <section class="progress-panel" aria-label="Progresso do Treino">
-            <div class="progress-header">
-                <span>Progresso do Treino</span>
-                <span id="progress-percentage">0%</span>
-            </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="progress-bar-fill"></div>
-            </div>
-        </section>
-
-        <!-- ==========================================
-             CORPO DO TREINO (EXERCÍCIOS E DETALHES)
-             ========================================== -->
-        <main>
-            <!-- Informações detalhadas do músculo do dia e observações -->
-            <div class="workout-info-header">
-                <span class="workout-day-badge" id="workout-day-title">DIA 1</span>
-                <h2 class="workout-target-group" id="workout-target-group">PEITO</h2>
+        <!-- ===================================================================
+             VIEW 1: HUB INICIAL (TELA DE ENTRADA DO APLICATIVO)
+             =================================================================== -->
+        <section id="view-hub" class="app-view active">
+            <header>
+                <div class="logo-section">
+                    <h1>FiiW HUNTER</h1>
+                    <p>Seu cronograma de treinamento e performance de alta performance</p>
+                </div>
                 
-                <div class="workout-meta-box">
-                    <!-- Ícone informativo da lâmpada/dica -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
-                        <line x1="9" y1="18" x2="15" y2="18"></line>
-                        <line x1="10" y1="22" x2="14" y2="22"></line>
-                    </svg>
-                    <span id="workout-meta-info">Carregando informações do treino...</span>
+                <!-- Botões seletores para alternar dinamicamente entre masculino e feminino -->
+                <div class="gender-selector" id="gender-toggle-wrapper">
+                    <button id="btn-gender-male" class="gender-btn active" aria-label="Selecionar treino masculino">
+                        <!-- Ícone Marte (masculino) -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                            <circle cx="10" cy="14" r="5"></circle>
+                            <line x1="19" y1="5" x2="14" y2="10"></line>
+                            <polyline points="14 5 19 5 19 10"></polyline>
+                        </svg>
+                        Masculino
+                    </button>
+                    <button id="btn-gender-female" class="gender-btn" aria-label="Selecionar treino feminino">
+                        <!-- Ícone Vênus (feminino) -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                            <circle cx="12" cy="9" r="5"></circle>
+                            <line x1="12" y1="14" x2="12" y2="21"></line>
+                            <line x1="9" y1="18" x2="15" y2="18"></line>
+                        </svg>
+                        Feminino
+                    </button>
+                </div>
+            </header>
+
+            <!-- Grid contendo as opções principais do aplicativo (Hub) -->
+            <div class="hub-grid">
+                <!-- Card para acessar os Treinos -->
+                <div class="hub-card" id="card-goto-workouts">
+                    <div class="hub-card-icon">
+                        <!-- Ícone de Halteres (Halter) -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+                            <path d="M6.5 6.5h11M6.5 17.5h11M18 4h3v16h-3zM3 4h3v16H3zM6.5 12h11"></path>
+                        </svg>
+                    </div>
+                    <div class="hub-card-info">
+                        <h3>Treinos Semanais</h3>
+                        <p>Divisão de treinos por níveis Iniciante, Intermediário e Avançado.</p>
+                    </div>
+                    <span class="hub-card-badge">Acessar</span>
+                </div>
+
+                <!-- Card para acessar o Progresso e IMC -->
+                <div class="hub-card" id="card-goto-progress">
+                    <div class="hub-card-icon">
+                        <!-- Ícone de Evolução/Atividade Física -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="hub-card-info">
+                        <h3>Evolução & IMC</h3>
+                        <p>Registre seus treinos, peso e calcule seu IMC para acompanhar evolução.</p>
+                    </div>
+                    <span class="hub-card-badge">Acessar</span>
+                </div>
+
+                <!-- Card para acessar as Dietas e Nutrição -->
+                <div class="hub-card" id="card-goto-diet">
+                    <div class="hub-card-icon">
+                        <!-- Ícone de Alimento/Coração -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path>
+                            <path d="M12 6a6 6 0 0 0-6 6"></path>
+                        </svg>
+                    </div>
+                    <div class="hub-card-info">
+                        <h3>Dieta & Nutrição</h3>
+                        <p>Acesse dietas pré-prontas ou elabore seu cardápio personalizado.</p>
+                    </div>
+                    <span class="hub-card-badge">Acessar</span>
                 </div>
             </div>
 
-            <!-- Container onde os cards de exercícios serão injetados pelo JS -->
-            <div class="exercises-list" id="exercises-list-container">
-                <!-- Exercícios carregados dinamicamente -->
+            <!-- Painel resumo das estatísticas semanais do usuário -->
+            <div class="hub-summary-panel">
+                <h3>Resumo Semanal</h3>
+                <div class="summary-stats-grid">
+                    <div class="summary-stat-box">
+                        <span class="stat-value" id="summary-workouts-done">0/5</span>
+                        <span class="stat-label">Exercícios do Dia</span>
+                    </div>
+                    <div class="summary-stat-box">
+                        <span class="stat-value" id="summary-imc-value">--</span>
+                        <span class="stat-label">Último IMC Calculado</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 2: SEÇÃO DE CRONOGRAMA E DETALHES DOS EXERCÍCIOS
+             =================================================================== -->
+        <section id="view-workouts" class="app-view hidden">
+            <!-- Seletor de níveis de treino (Iniciante, Intermediário, Avançado) -->
+            <div class="level-selector-wrapper">
+                <span class="section-subtitle">Selecione a Intensidade</span>
+                <div class="level-selector" id="level-selector-toggle">
+                    <button class="level-btn active" data-level="iniciante">Iniciante</button>
+                    <button class="level-btn" data-level="intermediario">Intermediário</button>
+                    <button class="level-btn" data-level="avancado">Avançado</button>
+                </div>
             </div>
 
-            <!-- Seção de circuito metabólico exclusiva para alguns dias (ex: Feminino Dia 5) -->
-            <section class="circuit-panel" id="circuit-container" style="display: none;">
-                <!-- Conteúdo do circuito carregado dinamicamente -->
-            </section>
-        </main>
+            <!-- Abas horizontais dos dias da semana (Dia 1 ao Dia 5) -->
+            <nav class="days-nav-wrapper">
+                <div class="days-tabs" id="days-selector">
+                    <!-- Conteúdo injetado dinamicamente pelo JS -->
+                </div>
+            </nav>
 
-        <!-- ==========================================
-             BOTÃO DE RESET DO HISTÓRICO DE EXERCÍCIOS
-             ========================================== -->
-        <footer class="reset-history-wrapper">
-            <button class="btn-reset-workout" id="btn-reset-workout-data" aria-label="Resetar progresso dos treinos">
-                <!-- Ícone de Lixeira -->
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
-                Resetar Progresso
-            </button>
-        </footer>
+            <!-- Barra de progresso geral do treino ativo -->
+            <div class="progress-panel" aria-label="Progresso do Treino">
+                <div class="progress-header">
+                    <span>Progresso do Treino</span>
+                    <span id="progress-percentage">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                </div>
+            </div>
 
-        <!-- ==========================================
-             WIDGET FLUTUANTE DO CRONÔMETRO DE DESCANSO
-             ========================================== -->
-        <section class="timer-widget" id="timer-widget-panel" aria-label="Cronômetro de descanso">
+            <main>
+                <!-- Cabeçalho do treino selecionado -->
+                <div class="workout-info-header">
+                    <span class="workout-day-badge" id="workout-day-title">DIA 1</span>
+                    <h2 class="workout-target-group" id="workout-target-group">Carregando...</h2>
+                    
+                    <div class="workout-meta-box">
+                        <!-- Ícone de Dica informativa -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+                            <line x1="9" y1="18" x2="15" y2="18"></line>
+                            <line x1="10" y1="22" x2="14" y2="22"></line>
+                        </svg>
+                        <span id="workout-meta-info">Carregando informações do treino...</span>
+                    </div>
+                </div>
+
+                <!-- Container onde a lista de exercícios do dia será injetada -->
+                <div class="exercises-list" id="exercises-list-container">
+                    <!-- Exercícios carregados dinamicamente -->
+                </div>
+
+                <!-- Seção para exibição de circuito metabólico se houver -->
+                <section class="circuit-panel" id="circuit-container" style="display: none;">
+                    <!-- Conteúdo do circuito carregado dinamicamente -->
+                </section>
+            </main>
+
+            <!-- Rodapé da seção de treinos contendo ações extras -->
+            <div class="workout-actions-wrapper">
+                <!-- Botão para abrir o modal de criação de treino personalizado -->
+                <button class="btn-custom-workout" id="btn-open-custom-workout-modal">
+                    <!-- Ícone de Adicionar (+) -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Criar Treino Customizado
+                </button>
+                
+                <!-- Botão para restaurar o treino padrão do dia (exibido apenas se houver personalização ativa no dia) -->
+                <button class="btn-restore-default" id="btn-restore-default-workout" style="display: none;">
+                    <!-- Ícone de seta para retornar/desfazer -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <polyline points="3 3 3 8 8 8"></polyline>
+                    </svg>
+                    Restaurar Treino Padrão
+                </button>
+                
+                <!-- Botão de reset do histórico e progresso -->
+                <button class="btn-reset-workout" id="btn-reset-workout-data" aria-label="Resetar progresso dos treinos">
+                    <!-- Ícone de Lixeira -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    Resetar Progresso
+                </button>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 3: SEÇÃO DE EVOLUÇÃO FÍSICA E CALCULADORA DE IMC
+             =================================================================== -->
+        <section id="view-progress" class="app-view hidden">
+            <!-- Formulário para registro diário de treinos e medidas do usuário -->
+            <div class="progress-form-panel">
+                <h3>Registrar Evolução do Dia</h3>
+                <form id="form-progress-register" class="progress-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="input-weight">Peso Atual (kg)</label>
+                            <input type="number" id="input-weight" step="0.1" placeholder="Ex: 78.5" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="input-height">Sua Altura (cm)</label>
+                            <input type="number" id="input-height" placeholder="Ex: 180" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="input-time">Duração do Treino (minutos)</label>
+                            <input type="number" id="input-time" placeholder="Ex: 50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="input-calories">Calorias Queimadas (kcal)</label>
+                            <input type="number" id="input-calories" placeholder="Ex: 400" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit-form">Salvar Registro Físico</button>
+                </form>
+            </div>
+
+            <!-- Calculadora visual de IMC baseada nos dados do usuário -->
+            <div class="imc-calculator-panel">
+                <h3>Calculadora de IMC Integrada</h3>
+                <div class="imc-result-wrapper">
+                    <div class="imc-circle" id="imc-circle-container">
+                        <span id="imc-number">--</span>
+                        <span class="imc-label">IMC</span>
+                    </div>
+                    <div class="imc-feedback">
+                        <h4 id="imc-status">Calculando...</h4>
+                        <p id="imc-description">Insira seus dados acima para calcular e analisar sua evolução física.</p>
+                    </div>
+                </div>
+                
+                <!-- Barra de exibição do status do IMC -->
+                <div class="imc-bar-container">
+                    <div class="imc-bar-pointer" id="imc-pointer" style="left: 0%;"></div>
+                    <div class="imc-bar-segments">
+                        <div class="imc-segment segment-underweight" title="Abaixo do peso"></div>
+                        <div class="imc-segment segment-normal" title="Peso normal"></div>
+                        <div class="imc-segment segment-overweight" title="Sobrepeso"></div>
+                        <div class="imc-segment segment-obese" title="Obesidade"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista que apresenta o histórico de registros inseridos pelo usuário -->
+            <div class="history-panel">
+                <h3>Histórico de Evolução Fisiológica</h3>
+                <div class="history-list-wrapper">
+                    <ul class="history-list" id="progress-history-list">
+                        <!-- Injetado dinamicamente via JS -->
+                        <li class="history-empty">Nenhum registro encontrado. Cadastre um novo acima!</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 4: SEÇÃO DE DIETAS PRONTAS E PERSONALIZAÇÃO ALIMENTAR
+             =================================================================== -->
+        <section id="view-diet" class="app-view hidden">
+            <!-- Exibição de guias de dietas padrão (presets) recomendadas -->
+            <div class="diet-presets-panel">
+                <h3>Sugestões de Planos Alimentares</h3>
+                <div class="diet-presets-tabs">
+                    <button class="diet-tab-btn active" data-diet="definicao">Definição Muscular</button>
+                    <button class="diet-tab-btn" data-diet="emagrecimento">Queima de Gordura</button>
+                    <button class="diet-tab-btn" data-diet="hipertrofia">Ganho de Massa</button>
+                </div>
+                <div class="diet-preset-details" id="diet-preset-info">
+                    <!-- O conteúdo da dieta selecionada será injetado dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Exibição do cardápio alimentar personalizado do usuário -->
+            <div class="custom-diet-panel">
+                <div class="custom-diet-header">
+                    <h3>Minha Dieta Personalizada</h3>
+                    <button class="btn-edit-diet" id="btn-open-custom-diet-modal">
+                        Editar Refeições
+                    </button>
+                </div>
+                
+                <div class="meals-list" id="custom-meals-container">
+                    <!-- Refeições customizadas listadas dinamicamente via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             WIDGET FLUTUANTE 1: CRONÔMETRO DE DESCANSO
+             =================================================================== -->
+        <section class="timer-widget collapsed" id="timer-widget-panel" aria-label="Cronômetro de descanso">
             <!-- Linha de progresso no topo do timer -->
             <div class="timer-progress-track">
                 <div class="timer-bar-fill" id="timer-bar-fill"></div>
             </div>
             
-            <div class="timer-widget-header">
-                <span class="timer-title">
+            <!-- Cabeçalho clicável do timer para expandir/recolher -->
+            <div class="timer-widget-header" id="timer-header-click" style="cursor: pointer;">
+                <span class="timer-title" id="timer-title-element">
                     <!-- Ícone de Relógio -->
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    Cronômetro de Descanso
+                    <!-- Texto do título envelopado para controle de ocultação responsiva no celular -->
+                    <span class="timer-title-text">Cronômetro de Descanso</span>
                 </span>
+                <!-- Botão para alternar visualização -->
+                <button class="timer-toggle-btn" id="timer-btn-expand" aria-label="Expandir/Minimizar Cronômetro" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" id="timer-arrow-icon" style="transition: transform 0.3s ease;">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                </button>
             </div>
             
             <div class="timer-body">
                 <div class="timer-timer-area">
-                    <!-- Texto com contagem de tempo -->
+                    <!-- Display numérico do tempo restante -->
                     <span class="timer-time-display" id="timer-time">00:00</span>
                     
                     <div class="timer-actions">
-                        <!-- Botão de Iniciar/Pausar -->
+                        <!-- Botão Play/Pause -->
                         <button class="timer-btn timer-btn-primary" id="timer-btn-toggle" aria-label="Iniciar/Pausar descanso">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
                         </button>
-                        <!-- Botão de Reiniciar -->
+                        <!-- Botão Reset -->
                         <button class="timer-btn timer-btn-secondary" id="timer-btn-reset" aria-label="Reiniciar descanso">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
@@ -154,7 +374,7 @@
                     </div>
                 </div>
                 
-                <!-- Botões para selecionar tempos de descanso rápidos -->
+                <!-- Presets rápidos de duração do descanso -->
                 <div class="timer-presets">
                     <button class="timer-btn-preset" data-seconds="60" aria-label="60 segundos de descanso">60s</button>
                     <button class="timer-btn-preset" data-seconds="90" aria-label="90 segundos de descanso">90s</button>
@@ -163,9 +383,172 @@
             </div>
         </section>
 
+        <!-- ===================================================================
+             WIDGET FLUTUANTE 2: CONTROLADOR REMOTO DO SPOTIFY
+             =================================================================== -->
+        <section class="spotify-widget collapsed" id="spotify-widget-panel" aria-label="Player do Spotify">
+            <!-- Cabeçalho clicável do player do Spotify -->
+            <div class="spotify-header" id="spotify-header-click">
+                <div class="spotify-logo-title">
+                    <!-- Ícone oficial do Spotify -->
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" style="color: #1DB954;">
+                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.565.387-.86.207-2.377-1.454-5.37-1.783-8.893-.982-.336.075-.668-.135-.744-.47-.077-.337.135-.668.47-.745 3.848-.878 7.14-.51 9.82.13.296.18.388.566.207.86zm1.224-2.72c-.227.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.075-1.182-.413.125-.847-.11-.972-.522-.125-.413.11-.847.522-.972 3.666-1.11 8.224-.567 11.34 1.348.366.226.486.707.26 1.07zm.106-2.833C14.392 8.76 8.444 8.567 5.018 9.607c-.528.16-1.083-.14-1.243-.668-.16-.528.14-1.083.668-1.244 3.93-1.192 10.5-.97 14.575 1.45.477.283.633.9.35 1.377-.282.478-.9.633-1.378.35z"/>
+                    </svg>
+                    <span class="spotify-widget-title">Spotify Connect</span>
+                </div>
+                <button class="spotify-toggle-btn" id="spotify-btn-expand" aria-label="Expandir/Minimizar Player">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" id="spotify-arrow-icon">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="spotify-body">
+                <!-- Estado 1: Usuário não autenticado -->
+                <div class="spotify-logged-out" id="spotify-area-logged-out">
+                    <p>Conecte sua conta do Spotify Premium para controlar o tocador de música no treino.</p>
+                    <button class="btn-spotify-connect" id="btn-spotify-connect-action">
+                        Conectar Spotify
+                    </button>
+                </div>
+                
+                <!-- Estado 2: Usuário autenticado com sucesso -->
+                <div class="spotify-logged-in" id="spotify-area-logged-in" style="display: none;">
+                    <div class="spotify-user-bar">
+                        <img src="" alt="Avatar" id="spotify-user-avatar" class="spotify-avatar" style="display: none;">
+                        <span class="spotify-user-name" id="spotify-user-name">Carregando perfil...</span>
+                    </div>
+                    
+                    <div class="spotify-track-info">
+                        <div class="spotify-album-art">
+                            <img src="" id="spotify-track-art" alt="Capa do Álbum">
+                        </div>
+                        <div class="spotify-track-metadata">
+                            <span class="spotify-track-name" id="spotify-track-title">Nenhuma faixa</span>
+                            <span class="spotify-track-artist" id="spotify-track-artist">Abra o Spotify no seu celular</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Dropdown seletor para carregar as playlists do usuário -->
+                    <div class="spotify-playlists-select-wrapper">
+                        <label for="spotify-playlists-dropdown" class="spotify-select-label">Tocar sua Playlist</label>
+                        <select id="spotify-playlists-dropdown" class="spotify-select-dropdown">
+                            <option value="">Selecione uma playlist...</option>
+                        </select>
+                    </div>
+
+                    <!-- Botões de controle de mídia e reprodução remota -->
+                    <div class="spotify-controls">
+                        <button class="spotify-media-btn" id="spotify-media-prev" aria-label="Música anterior">
+                            <!-- Ícone de Voltar -->
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                                <line x1="5" y1="4" x2="5" y2="20" stroke="currentColor" stroke-width="3"></line>
+                            </svg>
+                        </button>
+                        <button class="spotify-media-btn spotify-media-btn-play" id="spotify-media-toggle" aria-label="Play/Pause">
+                            <!-- Ícone de Play/Pause dinâmico -->
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" id="spotify-play-icon">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                        </button>
+                        <button class="spotify-media-btn" id="spotify-media-next" aria-label="Próxima música">
+                            <!-- Ícone de Avançar -->
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                                <line x1="19" y1="4" x2="19" y2="20" stroke="currentColor" stroke-width="3"></line>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Controle de volume integrado -->
+                    <div class="spotify-volume-container">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" class="spotify-volume-icon">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" id="spotify-volume-wave-low" style="transition: opacity 0.2s ease;"></path>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" id="spotify-volume-wave-high" style="transition: opacity 0.2s ease;"></path>
+                        </svg>
+                        <input type="range" id="spotify-volume-slider" min="0" max="100" value="50" class="spotify-volume-slider" aria-label="Volume">
+                        <span id="spotify-volume-value" class="spotify-volume-value">50%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ===================================================================
+         MODAL DE CRIAÇÃO DE TREINOS PERSONALIZADOS PELO USUÁRIO
+         =================================================================== -->
+    <div class="modal-overlay" id="modal-custom-workout" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Montar Meu Treino</h3>
+                <button class="btn-close-modal" id="btn-close-workout-modal">&times;</button>
+            </div>
+            <form id="form-custom-workout">
+                <div class="form-group">
+                    <label for="input-custom-muscle">Músculo ou Nome do Treino</label>
+                    <input type="text" id="input-custom-muscle" placeholder="Ex: OMBRO E TRÍCEPS" required>
+                </div>
+                <div class="form-group">
+                    <label for="input-custom-info">Instruções / Notas do Treino</label>
+                    <input type="text" id="input-custom-info" placeholder="Ex: Foco em cadência e contração lenta">
+                </div>
+                
+                <!-- Campos dinâmicos para adicionar exercícios adicionais -->
+                <div class="modal-dynamic-fields">
+                    <span class="fields-title">Exercícios do Treino</span>
+                    <div id="custom-exercises-fields-container">
+                        <!-- Primeira linha padrão de exercícios para guiar o usuário -->
+                        <div class="custom-exercise-field-row">
+                            <input type="text" class="custom-ex-name-input" placeholder="Nome do exercício" required>
+                            <input type="text" class="custom-ex-series-input" placeholder="Séries/Reps" required>
+                            <!-- Removido o seletor de tipo (composto, isolador, isometria) para simplificar para o usuário final -->
+                        </div>
+                    </div>
+                    <button type="button" class="btn-add-field" id="btn-add-exercise-field">
+                        + Adicionar Mais Exercícios
+                    </button>
+                </div>
+                
+                <button type="submit" class="btn-submit-form">Salvar Treino Customizado</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================
+         MODAL DE EDIÇÃO DE CARDÁPIO ALIMENTAR DIÁRIO DO USUÁRIO
+         =================================================================== -->
+    <div class="modal-overlay" id="modal-custom-diet" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Personalizar Minhas Refeições</h3>
+                <button class="btn-close-modal" id="btn-close-diet-modal">&times;</button>
+            </div>
+            <form id="form-custom-diet">
+                <div class="form-group">
+                    <label for="diet-breakfast">Café da Manhã</label>
+                    <textarea id="diet-breakfast" placeholder="Ex: 3 ovos inteiros mexidos, 2 fatias de pão integral, café preto." rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="diet-lunch">Almoço</label>
+                    <textarea id="diet-lunch" placeholder="Ex: 150g de peito de frango grelhado, 150g de arroz integral, feijão e salada verde." rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="diet-snack">Café da Tarde / Lanche da Tarde</label>
+                    <textarea id="diet-snack" placeholder="Ex: 30g de Whey Protein batido com 1 banana e aveia." rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="diet-dinner">Jantar / Última Refeição</label>
+                    <textarea id="diet-dinner" placeholder="Ex: 150g de filé de peixe grelhado com batata doce e brócolis." rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn-submit-form">Confirmar e Salvar Dieta</button>
+            </form>
+        </div>
     </div>
 
     <!-- Script de lógica e gerenciamento de estado injetado no fim do body -->
-    <script src="JS/script.js"></script>
+    <script src="js/script.js?v=1.0.3"></script>
 </body>
 </html>
