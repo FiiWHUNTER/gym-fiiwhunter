@@ -506,12 +506,20 @@ const workoutsData = {
 };
 
 // ===================================================================
+// CLIENTE SUPABASE (BACKEND DE AUTENTICAÇÃO E BANCO DE DADOS)
+// ===================================================================
+// SUPABASE_URL e SUPABASE_ANON_KEY vêm de js/supabase-config.js, carregado antes deste arquivo
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===================================================================
 // VARIÁVEIS GLOBAIS DE ESTADO DA APLICAÇÃO
 // ===================================================================
 let activeGender = localStorage.getItem('activeGender') || 'homem'; // Gênero ativo (homem / mulher)
 let activeDay = parseInt(localStorage.getItem('activeDay')) || 1; // Dia ativo do cronograma (1 a 5)
 let activeLevel = localStorage.getItem('activeLevel') || 'intermediario'; // Nível de intensidade (iniciante / intermediario / avancado)
 let activeView = 'hub'; // Nome da tela ativa no sistema SPA (hub / workouts / progress / diet)
+let authMode = 'signin'; // Modo ativo da tela de autenticação ('signin' / 'signup')
+let progressRecordsCache = []; // Cache em memória do histórico de evolução física buscado do Supabase
 
 // Variáveis de controle do Cronômetro de descanso
 let timerInterval = null; // Armazena a referência da contagem
@@ -534,9 +542,21 @@ const domElements = {
     btnHomem: document.getElementById('btn-gender-male'),
     btnMulher: document.getElementById('btn-gender-female'),
     btnBackHub: document.getElementById('btn-back-hub'),
+    btnLogout: document.getElementById('btn-logout'),
     appNavBar: document.getElementById('app-nav-bar'),
     navTitleText: document.getElementById('nav-title-text'),
-    
+
+    // Elementos da tela de Autenticação (Supabase Auth)
+    viewAuth: document.getElementById('view-auth'),
+    formAuth: document.getElementById('form-auth'),
+    inputAuthEmail: document.getElementById('input-auth-email'),
+    inputAuthPassword: document.getElementById('input-auth-password'),
+    authErrorMsg: document.getElementById('auth-error-msg'),
+    authSubtitle: document.getElementById('auth-subtitle'),
+    btnAuthSubmit: document.getElementById('btn-auth-submit'),
+    authToggleText: document.getElementById('auth-toggle-text'),
+    btnAuthToggleMode: document.getElementById('btn-auth-toggle-mode'),
+
     // Telas (Views) da aplicação SPA
     viewHub: document.getElementById('view-hub'),
     viewWorkouts: document.getElementById('view-workouts'),
@@ -574,7 +594,7 @@ const domElements = {
     timerWidgetPanel: document.getElementById('timer-widget-panel'), // Painel principal do widget do cronômetro
     timerHeaderClick: document.getElementById('timer-header-click'), // Cabeçalho clicável do cronômetro para recolher/expandir
     timerTitleElement: document.getElementById('timer-title-element'), // Elemento do título do cronômetro (contém o ícone/texto)
-
+    timerBubbleTime: document.getElementById('timer-bubble-time'), // Elemento de exibição do tempo na bolha colapsada do celular
     
     // Elementos da Evolução Física e IMC
     formProgress: document.getElementById('form-progress-register'),
@@ -596,11 +616,7 @@ const domElements = {
     btnCloseDietModal: document.getElementById('btn-close-diet-modal'),
     modalCustomDiet: document.getElementById('modal-custom-diet'),
     formCustomDiet: document.getElementById('form-custom-diet'),
-    dietBreakfast: document.getElementById('diet-breakfast'),
-    dietLunch: document.getElementById('diet-lunch'),
-    dietSnack: document.getElementById('diet-snack'),
-    dietDinner: document.getElementById('diet-dinner'),
-    
+
     // Elementos de Treinos Customizados (Modais)
     modalCustomWorkout: document.getElementById('modal-custom-workout'),
     btnOpenCustomWorkoutModal: document.getElementById('btn-open-custom-workout-modal'),
@@ -610,6 +626,10 @@ const domElements = {
     inputCustomInfo: document.getElementById('input-custom-info'),
     customExercisesFieldsContainer: document.getElementById('custom-exercises-fields-container'),
     btnAddExerciseField: document.getElementById('btn-add-exercise-field'),
+
+    // Elementos do buscador de exercícios reais (Wger)
+    wgerCategoryButtons: document.getElementById('wger-category-buttons'),
+    wgerResultsList: document.getElementById('wger-results-list'),
     
     // Elementos do Spotify Widget
     spotifyWidgetPanel: document.getElementById('spotify-widget-panel'),
@@ -628,9 +648,7 @@ const domElements = {
     spotifyMediaPrev: document.getElementById('spotify-media-prev'),
     spotifyMediaToggle: document.getElementById('spotify-media-toggle'),
     spotifyPlayIcon: document.getElementById('spotify-play-icon'),
-    spotifyMediaNext: document.getElementById('spotify-media-next'),
-    spotifyVolumeSlider: document.getElementById('spotify-volume-slider'),
-    spotifyVolumeValue: document.getElementById('spotify-volume-value')
+    spotifyMediaNext: document.getElementById('spotify-media-next')
 };
 
 // ===================================================================
@@ -670,6 +688,124 @@ const dietPresets = {
 };
 
 // ===================================================================
+// MÓDULO DE AUTENTICAÇÃO (SUPABASE AUTH)
+// ===================================================================
+/**
+ * Oculta todas as telas internas do app (usado antes de trocar de view e no logout)
+ */
+function hideAllAppViews() {
+    const views = [domElements.viewHub, domElements.viewWorkouts, domElements.viewProgress, domElements.viewDiet];
+    views.forEach(v => {
+        if (v) {
+            v.classList.remove('active');
+            v.classList.add('hidden');
+        }
+    });
+}
+
+function showAuthError(message) {
+    if (!domElements.authErrorMsg) return;
+    domElements.authErrorMsg.innerText = message;
+    domElements.authErrorMsg.style.display = 'block';
+}
+
+function clearAuthError() {
+    if (!domElements.authErrorMsg) return;
+    domElements.authErrorMsg.style.display = 'none';
+    domElements.authErrorMsg.innerText = '';
+}
+
+/**
+ * Alterna a tela de autenticação entre os modos "Entrar" e "Criar Conta"
+ */
+function toggleAuthMode() {
+    authMode = authMode === 'signin' ? 'signup' : 'signin';
+    clearAuthError();
+    if (authMode === 'signup') {
+        domElements.authSubtitle.innerText = 'Crie sua conta para começar a treinar';
+        domElements.btnAuthSubmit.innerText = 'Criar Conta';
+        domElements.authToggleText.innerText = 'Já tem uma conta?';
+        domElements.btnAuthToggleMode.innerText = 'Entrar';
+    } else {
+        domElements.authSubtitle.innerText = 'Entre com sua conta para acessar seu treino';
+        domElements.btnAuthSubmit.innerText = 'Entrar';
+        domElements.authToggleText.innerText = 'Ainda não tem conta?';
+        domElements.btnAuthToggleMode.innerText = 'Criar Conta';
+    }
+}
+
+/**
+ * Cria uma nova conta de usuário no Supabase Auth via e-mail e senha
+ */
+async function handleSignUp(email, password) {
+    const { error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) throw error;
+}
+
+/**
+ * Autentica um usuário existente no Supabase Auth via e-mail e senha
+ */
+async function handleSignIn(email, password) {
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+}
+
+/**
+ * Reseta a interface de volta para a tela de login/cadastro (sem chamar o Supabase)
+ */
+function showAuthScreen() {
+    progressRecordsCache = [];
+    if (domElements.formAuth) domElements.formAuth.reset();
+
+    hideAllAppViews();
+    if (domElements.appNavBar) domElements.appNavBar.style.display = 'none';
+    domElements.viewAuth.classList.remove('hidden');
+    domElements.viewAuth.classList.add('active');
+}
+
+/**
+ * Encerra a sessão autenticada do usuário no Supabase e retorna para a tela de login
+ */
+async function handleSignOut() {
+    await supabaseClient.auth.signOut();
+    showAuthScreen();
+}
+
+/**
+ * Executado assim que existe uma sessão Supabase válida: libera o restante do aplicativo
+ * e carrega o histórico de evolução física do usuário autenticado
+ */
+async function onAuthenticated() {
+    domElements.viewAuth.classList.remove('active');
+    domElements.viewAuth.classList.add('hidden');
+
+    switchView('hub');
+
+    await refreshProgressUI();
+    // Atualiza o card de IMC do Hub com os dados recém-carregados
+    updateHubSummaryImc(progressRecordsCache);
+}
+
+/**
+ * Verifica se já existe uma sessão ativa do Supabase ao carregar a página.
+ * Caso contrário, a tela de login/cadastro (view-auth) permanece visível.
+ */
+async function initAuthGate() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        await onAuthenticated();
+    }
+
+    // Reage a encerramentos de sessão que não partiram do botão "Sair"
+    // (ex.: token expirado) enquanto o app está aberto
+    supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT' && !domElements.viewAuth.classList.contains('active')) {
+            showAuthScreen();
+        }
+    });
+}
+
+// ===================================================================
 // NAVEGAÇÃO ENTRE TELAS DO SISTEMA (SPA)
 // ===================================================================
 /**
@@ -678,29 +814,24 @@ const dietPresets = {
  */
 function switchView(viewName) {
     activeView = viewName;
-    
+
     // Oculta todas as views de tela
-    const views = [domElements.viewHub, domElements.viewWorkouts, domElements.viewProgress, domElements.viewDiet];
-    views.forEach(v => {
-        if (v) {
-            v.classList.remove('active');
-            v.classList.add('hidden');
-        }
-    });
-    
+    hideAllAppViews();
+
     // Exibe a view selecionada e ajusta títulos da barra superior
-    let title = "FiiW HUNTER";
+    let title = "FitTrack";
     if (viewName === 'hub') {
         if (domElements.appNavBar) domElements.appNavBar.style.display = 'none';
         updateHubSummary();
+        updateHubSummaryImc(progressRecordsCache);
     } else {
         if (domElements.appNavBar) domElements.appNavBar.style.display = 'flex';
-        
+
         if (viewName === 'workouts') {
             title = "Cronograma de Treino";
             renderDaysTabs();
             renderActiveWorkout();
-            
+
             // Marca o nível ativo selecionado visualmente nos botões
             const levelBtns = domElements.levelSelector.querySelectorAll('.level-btn');
             levelBtns.forEach(btn => {
@@ -712,8 +843,9 @@ function switchView(viewName) {
             });
         } else if (viewName === 'progress') {
             title = "Histórico & Evolução";
-            renderProgressHistory();
-            recalculateLastImc();
+            // Renderiza a partir do cache já buscado do Supabase (ver refreshProgressUI)
+            renderProgressHistory(progressRecordsCache);
+            recalculateLastImc(progressRecordsCache);
         } else if (viewName === 'diet') {
             title = "Dieta & Nutrição";
             renderDietPreset('definicao');
@@ -1076,6 +1208,16 @@ function updateTimerUI() {
     if (domElements.timerWidgetPanel) {
         domElements.timerWidgetPanel.setAttribute('data-time-left', formatTime(timerTimeLeft));
     }
+    
+    // Também grava o atributo de tempo restante diretamente no elemento de título para que o pseudo-elemento CSS (.timer-title::after) possa renderizá-lo
+    if (domElements.timerTitleElement) {
+        domElements.timerTitleElement.setAttribute('data-time-left', formatTime(timerTimeLeft));
+    }
+
+    // Atualiza o texto do elemento HTML de exibição do tempo na bolha do celular para mostrar a contagem de forma nativa e visível
+    if (domElements.timerBubbleTime) {
+        domElements.timerBubbleTime.innerText = formatTime(timerTimeLeft);
+    }
 }
 
 /**
@@ -1232,84 +1374,113 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ===================================================================
-// LÓGICA DO MÓDULO DE REGISTROS DE EVOLUÇÃO FÍSICA E IMC
+// LÓGICA DO MÓDULO DE REGISTROS DE EVOLUÇÃO FÍSICA E IMC (SUPABASE)
 // ===================================================================
 /**
- * Salva as métricas diárias inseridas pelo usuário no localStorage
+ * Calcula o IMC a partir do peso (kg) e da altura (cm)
  */
-function saveProgressRecord(weight, height, time, calories) {
-    const records = JSON.parse(localStorage.getItem('progressHistory')) || [];
-    
-    // Calcula o IMC correspondente
+function calcularImc(weight, height) {
     const heightInMeters = height / 100;
-    const imc = parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(1));
-    
-    // Obtém data de hoje formatada
-    const today = new Date();
-    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    const newRecord = {
-        data: dateStr,
+    return parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(1));
+}
+
+/**
+ * Busca no Supabase o histórico de evolução física do usuário autenticado.
+ * O Row Level Security da tabela garante que só retornam registros do próprio usuário.
+ */
+async function fetchProgressRecords() {
+    const { data, error } = await supabaseClient
+        .from('progress_records')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Erro ao buscar histórico de evolução:', error.message);
+        return [];
+    }
+    return data;
+}
+
+/**
+ * Insere um novo registro de evolução física no Supabase.
+ * O user_id é preenchido automaticamente pelo banco (coluna com default auth.uid()).
+ */
+async function saveProgressRecord(weight, height, time, calories) {
+    const imc = calcularImc(weight, height);
+
+    const { error } = await supabaseClient.from('progress_records').insert({
         peso: weight,
         altura: height,
         tempo: time,
         calorias: calories,
-        imc: imc,
-        timestamp: Date.now()
-    };
-    
-    records.unshift(newRecord); // Adiciona no início da lista
-    localStorage.setItem('progressHistory', JSON.stringify(records));
-    
-    // Atualiza a exibição e recarrega os dados do IMC
-    renderProgressHistory();
-    recalculateLastImc();
+        imc: imc
+    });
+
+    if (error) {
+        console.error('Erro ao salvar registro de evolução:', error.message);
+        alert('Não foi possível salvar o registro. Tente novamente.');
+    }
 }
 
 /**
- * Remove um registro físico específico do histórico
- * @param {number} index Índice do item no array do histórico
+ * Remove um registro físico específico do histórico pelo seu id
+ * @param {string} id Identificador (uuid) do registro no Supabase
  */
-function deleteProgressRecord(index) {
-    const records = JSON.parse(localStorage.getItem('progressHistory')) || [];
-    records.splice(index, 1);
-    localStorage.setItem('progressHistory', JSON.stringify(records));
-    renderProgressHistory();
-    recalculateLastImc();
+async function deleteProgressRecord(id) {
+    const { error } = await supabaseClient.from('progress_records').delete().eq('id', id);
+    if (error) {
+        console.error('Erro ao excluir registro de evolução:', error.message);
+        alert('Não foi possível excluir o registro. Tente novamente.');
+    }
 }
 
 /**
- * Renderiza a lista de histórico na view
+ * Busca o histórico atualizado uma única vez no Supabase e atualiza todas as
+ * partes da interface que dependem dele (lista, calculadora de IMC e resumo do Hub)
  */
-function renderProgressHistory() {
+async function refreshProgressUI() {
+    progressRecordsCache = await fetchProgressRecords();
+    renderProgressHistory(progressRecordsCache);
+    recalculateLastImc(progressRecordsCache);
+    updateHubSummaryImc(progressRecordsCache);
+}
+
+/**
+ * Renderiza a lista de histórico na view a partir dos registros já buscados
+ * @param {Array} records Lista de registros vinda do Supabase
+ */
+function renderProgressHistory(records) {
     if (!domElements.progressHistoryList) return;
-    const records = JSON.parse(localStorage.getItem('progressHistory')) || [];
-    
+
     domElements.progressHistoryList.innerHTML = '';
-    
-    if (records.length === 0) {
+
+    if (!records || records.length === 0) {
         domElements.progressHistoryList.innerHTML = '<li class="history-empty">Nenhum registro cadastrado ainda.</li>';
         return;
     }
-    
-    records.forEach((rec, idx) => {
+
+    records.forEach((rec) => {
         const item = document.createElement('li');
         item.className = 'history-item';
-        
+
         // Define a classe de classificação do IMC
         let imcClass = 'imc-normal';
         if (rec.imc < 18.5) imcClass = 'imc-underweight';
         else if (rec.imc >= 25 && rec.imc < 30) imcClass = 'imc-overweight';
         else if (rec.imc >= 30) imcClass = 'imc-obese';
-        
+
+        // Formata a data de criação do registro (vinda do created_at do Postgres) no padrão brasileiro
+        const recordDate = new Date(rec.created_at);
+        const dateStr = `${recordDate.getDate().toString().padStart(2, '0')}/${(recordDate.getMonth() + 1).toString().padStart(2, '0')}`;
+
         item.innerHTML = `
             <div class="history-item-left">
-                <span class="date">${rec.data}</span>
+                <span class="date">${dateStr}</span>
                 <span class="metrics">${rec.peso}kg | ${rec.altura}cm | ${rec.tempo}min | ${rec.calorias}kcal</span>
             </div>
             <div class="history-item-right">
                 <span class="history-imc-badge ${imcClass}">IMC: ${rec.imc}</span>
-                <button class="btn-delete-record" data-index="${idx}" aria-label="Excluir registro">
+                <button class="btn-delete-record" data-id="${rec.id}" aria-label="Excluir registro">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1317,25 +1488,25 @@ function renderProgressHistory() {
                 </button>
             </div>
         `;
-        
+
         // Adiciona ouvinte para deletar registro
-        item.querySelector('.btn-delete-record').addEventListener('click', () => {
+        item.querySelector('.btn-delete-record').addEventListener('click', async () => {
             if (confirm('Excluir este registro permanentemente?')) {
-                deleteProgressRecord(idx);
+                await deleteProgressRecord(rec.id);
+                await refreshProgressUI();
             }
         });
-        
+
         domElements.progressHistoryList.appendChild(item);
     });
 }
 
 /**
  * Calcula e atualiza visualmente o painel da calculadora e a barra de ponteiro do IMC
+ * @param {Array} records Lista de registros vinda do Supabase
  */
-function recalculateLastImc() {
-    const records = JSON.parse(localStorage.getItem('progressHistory')) || [];
-    
-    if (records.length === 0) {
+function recalculateLastImc(records) {
+    if (!records || records.length === 0) {
         domElements.imcNumber.innerText = '--';
         domElements.imcStatus.innerText = 'Aguardando dados...';
         domElements.imcDescription.innerText = 'Registre seu peso e altura para calcular.';
@@ -1343,17 +1514,17 @@ function recalculateLastImc() {
         domElements.imcCircleContainer.className = 'imc-circle';
         return;
     }
-    
+
     const lastRecord = records[0]; // Pega o último registro adicionado
     const imc = lastRecord.imc;
     domElements.imcNumber.innerText = imc;
-    
+
     // Classifica o IMC e define os textos e cores correspondentes
     let status = '';
     let desc = '';
     let imcClass = '';
     let percentagePosition = 0; // Posição de 0% a 100% na barra visual
-    
+
     if (imc < 18.5) {
         status = 'Abaixo do peso';
         desc = 'Você está abaixo do peso ideal para a sua altura. Considere uma dieta de hipertrofia.';
@@ -1379,12 +1550,23 @@ function recalculateLastImc() {
         // Interpola a posição na barra (escala de 30 a 40 -> 75% a 95%)
         percentagePosition = 75 + Math.min(20, (((imc - 30) / 10) * 25));
     }
-    
+
     // Atualiza o DOM
     domElements.imcStatus.innerText = status;
     domElements.imcDescription.innerText = desc;
     domElements.imcCircleContainer.className = `imc-circle ${imcClass}`;
     domElements.imcPointer.style.left = `${percentagePosition}%`;
+}
+
+/**
+ * Escapa caracteres especiais de HTML antes de interpolar em innerHTML. Usado sempre que
+ * exibimos texto vindo de APIs externas (Wger, Open Food Facts) ou digitado pelo usuário,
+ * já que esses dados não são de confiança e podem quebrar o HTML ou injetar script.
+ */
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
 }
 
 // ===================================================================
@@ -1417,104 +1599,403 @@ function renderDietPreset(dietName) {
     domElements.dietPresetInfo.innerHTML = html;
 }
 
+// Rótulos e ícones (SVG paths) fixos dos 4 horários de refeição, reaproveitados
+// tanto na exibição somente-leitura (renderCustomDiet) quanto no modal de edição
+const MEAL_LABELS = {
+    breakfast: { titulo: 'Café da Manhã', icone: '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>' },
+    lunch: { titulo: 'Almoço', icone: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9zM13.73 21a2 2 0 0 1-3.46 0"/>' },
+    snack: { titulo: 'Lanche da Tarde', icone: '<path d="M12 2a10 10 0 1 0 10 10H12V2z"/>' },
+    dinner: { titulo: 'Jantar', icone: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/>' }
+};
+
 /**
- * Renderiza o cardápio personalizado inserido pelo usuário
+ * Lê a dieta personalizada do LocalStorage e normaliza para a estrutura atual
+ * ({ items: [...], notes: "" } por refeição). Migra automaticamente o formato
+ * antigo (texto livre) para o campo "notes", sem perder o que o usuário já tinha digitado.
+ */
+function getCustomDiet() {
+    const raw = JSON.parse(localStorage.getItem('customDiet')) || {};
+    const normalized = {};
+
+    Object.keys(MEAL_LABELS).forEach(mealKey => {
+        const value = raw[mealKey];
+        if (typeof value === 'string') {
+            normalized[mealKey] = { items: [], notes: value };
+        } else if (value && typeof value === 'object') {
+            normalized[mealKey] = {
+                items: Array.isArray(value.items) ? value.items : [],
+                notes: value.notes || ''
+            };
+        } else {
+            normalized[mealKey] = { items: [], notes: '' };
+        }
+    });
+
+    return normalized;
+}
+
+function saveCustomDiet(dietObj) {
+    localStorage.setItem('customDiet', JSON.stringify(dietObj));
+}
+
+/**
+ * Soma os macronutrientes dos alimentos de uma refeição, considerando a
+ * quantidade em gramas informada para cada item (os valores da API são por 100g)
+ */
+function calculateMealTotals(items) {
+    return items.reduce((acc, item) => {
+        const factor = (item.grams || 0) / 100;
+        acc.kcal += (item.kcal100 || 0) * factor;
+        acc.protein += (item.protein100 || 0) * factor;
+        acc.carbs += (item.carbs100 || 0) * factor;
+        acc.fat += (item.fat100 || 0) * factor;
+        return acc;
+    }, { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+}
+
+/**
+ * Renderiza a exibição somente-leitura do cardápio personalizado na tela de Dieta
  */
 function renderCustomDiet() {
     if (!domElements.customMealsContainer) return;
-    
-    // Carrega dados do localStorage ou inicia com valores em branco
-    const customDiet = JSON.parse(localStorage.getItem('customDiet')) || {
-        breakfast: "Nenhum alimento cadastrado.",
-        lunch: "Nenhum alimento cadastrado.",
-        snack: "Nenhum alimento cadastrado.",
-        dinner: "Nenhum alimento cadastrado."
-    };
-    
-    domElements.customMealsContainer.innerHTML = `
-        <!-- Café da Manhã -->
-        <div class="meal-card">
-            <div class="meal-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
+
+    const customDiet = getCustomDiet();
+
+    domElements.customMealsContainer.innerHTML = Object.keys(MEAL_LABELS).map(mealKey => {
+        const meal = customDiet[mealKey];
+        const { titulo, icone } = MEAL_LABELS[mealKey];
+        const totals = calculateMealTotals(meal.items);
+
+        const itemsHtml = meal.items.length > 0
+            ? `<ul class="meal-card-items">${meal.items.map(item =>
+                `<li>${escapeHtml(item.name)} <span>(${item.grams}g)</span></li>`
+              ).join('')}</ul>
+              <p class="meal-card-totals">${Math.round(totals.kcal)}kcal | P: ${totals.protein.toFixed(1)}g | C: ${totals.carbs.toFixed(1)}g | G: ${totals.fat.toFixed(1)}g</p>`
+            : '';
+
+        const notesHtml = meal.notes
+            ? `<p class="meal-card-notes">${escapeHtml(meal.notes)}</p>`
+            : (meal.items.length === 0 ? '<p>Nenhum alimento cadastrado.</p>' : '');
+
+        return `
+            <div class="meal-card">
+                <div class="meal-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">${icone}</svg>
+                </div>
+                <div class="meal-card-content">
+                    <h4>${titulo}</h4>
+                    ${itemsHtml}
+                    ${notesHtml}
+                </div>
             </div>
-            <div class="meal-card-content">
-                <h4>Café da Manhã</h4>
-                <p>${customDiet.breakfast || 'Nenhum alimento cadastrado.'}</p>
-            </div>
-        </div>
-        <!-- Almoço -->
-        <div class="meal-card">
-            <div class="meal-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9zM13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-            </div>
-            <div class="meal-card-content">
-                <h4>Almoço</h4>
-                <p>${customDiet.lunch || 'Nenhum alimento cadastrado.'}</p>
-            </div>
-        </div>
-        <!-- Lanche da Tarde -->
-        <div class="meal-card">
-            <div class="meal-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                    <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
-                </svg>
-            </div>
-            <div class="meal-card-content">
-                <h4>Lanche da Tarde</h4>
-                <p>${customDiet.snack || 'Nenhum alimento cadastrado.'}</p>
-            </div>
-        </div>
-        <!-- Jantar -->
-        <div class="meal-card">
-            <div class="meal-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 14 14"/>
-                </svg>
-            </div>
-            <div class="meal-card-content">
-                <h4>Jantar</h4>
-                <p>${customDiet.dinner || 'Nenhum alimento cadastrado.'}</p>
-            </div>
-        </div>
-    `;
+        `;
+    }).join('');
+}
+
+// ===================================================================
+// MÓDULO WGER (BANCO DE EXERCÍCIOS ABERTO E GRATUITO)
+// ===================================================================
+// Mapa de categorias de grupo muscular do Wger (id oficial da API -> rótulo em português).
+// A API pública do Wger não tem endpoint de busca por texto livre funcional (testado:
+// /api/v2/exercise/search/ não existe mais e filtros como ?search=/?name__icontains= são
+// ignorados pela API atual). O que funciona de forma confiável é filtrar por categoria
+// (grupo muscular) em /api/v2/exerciseinfo/, então a navegação é por categoria e não por texto.
+const WGER_CATEGORIES = {
+    11: 'Peito',
+    12: 'Costas',
+    9: 'Pernas',
+    13: 'Ombros',
+    8: 'Braços',
+    10: 'Abdômen',
+    14: 'Panturrilhas',
+    15: 'Cardio'
+};
+
+const wgerCategoryCache = {}; // Cache em memória por categoria já buscada nesta sessão, evita refetch
+
+/**
+ * Busca os exercícios de uma categoria (grupo muscular) no banco de dados aberto do Wger
+ * @param {number} categoryId Id da categoria no Wger (ver WGER_CATEGORIES)
+ * @returns {Array|null} Lista de exercícios, [] se a categoria não tiver nenhum, ou null em caso de falha de rede
+ */
+async function fetchWgerExercisesByCategory(categoryId) {
+    if (wgerCategoryCache[categoryId]) {
+        return wgerCategoryCache[categoryId];
+    }
+
+    try {
+        const url = `https://wger.de/api/v2/exerciseinfo/?category=${categoryId}&limit=40&format=json`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Wger respondeu ${res.status}`);
+        const data = await res.json();
+
+        const exercises = (data.results || [])
+            .map(ex => ({ id: ex.id, name: extractWgerExerciseName(ex) }))
+            .filter(ex => ex.name)
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        wgerCategoryCache[categoryId] = exercises;
+        return exercises;
+    } catch (err) {
+        console.warn('Não foi possível buscar exercícios no Wger:', err.message);
+        return null;
+    }
+}
+
+/**
+ * Extrai o nome do exercício priorizando a tradução em português (language id 7);
+ * cai para inglês (id 2) e, por último, para a primeira tradução disponível.
+ * A cobertura de português no Wger é parcial por ser um banco de dados colaborativo/aberto
+ * (medido empiricamente em ~1/3 dos exercícios) — por isso o fallback para inglês é necessário.
+ */
+function extractWgerExerciseName(exerciseInfo) {
+    const translations = exerciseInfo.translations || [];
+    const pt = translations.find(t => t.language === 7);
+    if (pt) return pt.name;
+    const en = translations.find(t => t.language === 2);
+    if (en) return en.name;
+    return translations[0] ? translations[0].name : null;
+}
+
+/**
+ * Renderiza os botões das categorias do Wger no modal de treino customizado
+ */
+function renderWgerCategoryButtons() {
+    if (!domElements.wgerCategoryButtons) return;
+
+    domElements.wgerCategoryButtons.innerHTML = Object.entries(WGER_CATEGORIES).map(([id, label]) =>
+        `<button type="button" class="wger-category-btn" data-category="${id}">${label}</button>`
+    ).join('');
+}
+
+/**
+ * Busca e exibe os exercícios da categoria selecionada, e destaca o botão ativo
+ * @param {string} categoryId Id da categoria clicada
+ * @param {HTMLElement} clickedBtn Botão clicado, para aplicar o destaque visual
+ */
+async function selectWgerCategory(categoryId, clickedBtn) {
+    domElements.wgerCategoryButtons.querySelectorAll('.wger-category-btn').forEach(btn => {
+        btn.classList.toggle('active', btn === clickedBtn);
+    });
+
+    domElements.wgerResultsList.innerHTML = '<li class="search-status-msg">Buscando exercícios...</li>';
+
+    const exercises = await fetchWgerExercisesByCategory(categoryId);
+
+    if (exercises === null) {
+        domElements.wgerResultsList.innerHTML = '<li class="search-status-msg">Não foi possível buscar exercícios agora. Tente novamente.</li>';
+        return;
+    }
+    if (exercises.length === 0) {
+        domElements.wgerResultsList.innerHTML = '<li class="search-status-msg">Nenhum exercício encontrado nesta categoria.</li>';
+        return;
+    }
+
+    domElements.wgerResultsList.innerHTML = exercises.map(ex =>
+        `<li class="wger-result-item" data-name="${escapeHtml(ex.name)}">
+            <span>${escapeHtml(ex.name)}</span>
+            <span class="wger-result-add-icon">+</span>
+        </li>`
+    ).join('');
+
+    domElements.wgerResultsList.querySelectorAll('.wger-result-item').forEach(li => {
+        li.addEventListener('click', () => addWgerExerciseToWorkoutForm(li.getAttribute('data-name')));
+    });
+}
+
+/**
+ * Adiciona uma nova linha ao formulário de treino customizado já com o nome do
+ * exercício preenchido — o usuário só precisa completar séries/repetições. A digitação
+ * manual continua disponível normalmente, esta é só uma forma mais rápida de preencher.
+ */
+function addWgerExerciseToWorkoutForm(exerciseName) {
+    const row = document.createElement('div');
+    row.className = 'custom-exercise-field-row';
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'custom-ex-name-input';
+    nameInput.required = true;
+    nameInput.value = exerciseName; // Atribuição via propriedade: sem risco de quebra de HTML
+
+    const seriesInput = document.createElement('input');
+    seriesInput.type = 'text';
+    seriesInput.className = 'custom-ex-series-input';
+    seriesInput.placeholder = 'Séries/Reps';
+    seriesInput.required = true;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-remove-row';
+    removeBtn.setAttribute('aria-label', 'Remover linha');
+    removeBtn.innerHTML = '&times;';
+    removeBtn.addEventListener('click', () => row.remove());
+
+    row.appendChild(nameInput);
+    row.appendChild(seriesInput);
+    row.appendChild(removeBtn);
+    domElements.customExercisesFieldsContainer.appendChild(row);
+
+    seriesInput.focus();
+}
+
+// ===================================================================
+// MÓDULO OPEN FOOD FACTS (BUSCA DE ALIMENTOS REAIS PARA AS REFEIÇÕES)
+// ===================================================================
+// A busca por texto livre da Open Food Facts não tem CORS liberado para chamadas
+// diretas do navegador (só a API estruturada por categoria/marca tem CORS, e ela não
+// filtra por nome). Por isso a busca passa pela Edge Function "off-search" do Supabase,
+// que roda no servidor e repassa a chamada — ver supabase/functions/off-search/index.ts.
+let editingCustomDiet = null; // Cópia de trabalho da dieta sendo editada no modal (antes de salvar)
+
+/**
+ * Busca alimentos reais por nome via a Edge Function proxy do Supabase
+ * @param {string} term Termo de busca digitado pelo usuário
+ * @returns {Array|null} Lista de alimentos encontrados, ou null em caso de falha
+ */
+async function searchFoods(term) {
+    try {
+        // O nome exibido no painel Supabase é "off-seach", mas o endpoint real publicado
+        // ficou com o identificador "dynamic-function" (nome de rota gerado no deploy via editor).
+        const { data, error } = await supabaseClient.functions.invoke('dynamic-function', {
+            body: { q: term }
+        });
+        if (error) throw error;
+        return data.results || [];
+    } catch (err) {
+        console.warn('Não foi possível buscar alimentos:', err.message);
+        return null;
+    }
+}
+
+/**
+ * Preenche os 4 blocos de refeição do modal com a dieta em edição (editingCustomDiet)
+ */
+function renderMealBuilders() {
+    document.querySelectorAll('.meal-builder').forEach(block => {
+        const mealKey = block.getAttribute('data-meal');
+        const meal = editingCustomDiet[mealKey];
+
+        block.querySelector('.meal-notes').value = meal.notes;
+        block.querySelector('.food-search-input').value = '';
+        block.querySelector('.food-search-results').innerHTML = '';
+        renderMealItemsList(block, mealKey);
+    });
+}
+
+/**
+ * Renderiza a lista de alimentos já adicionados a uma refeição, com input de gramas
+ * e botão de remover, além do subtotal de macros calculado
+ */
+function renderMealItemsList(block, mealKey) {
+    const meal = editingCustomDiet[mealKey];
+    const list = block.querySelector('.meal-items-list');
+    const totalsEl = block.querySelector('.meal-totals');
+
+    list.innerHTML = meal.items.map((item, idx) => `
+        <li class="meal-item" data-index="${idx}">
+            <span class="meal-item-name">${escapeHtml(item.name)}</span>
+            <input type="number" class="meal-item-grams" value="${item.grams}" min="1">
+            <button type="button" class="btn-remove-meal-item" aria-label="Remover alimento">&times;</button>
+        </li>
+    `).join('');
+
+    const totals = calculateMealTotals(meal.items);
+    totalsEl.innerText = meal.items.length > 0
+        ? `Total: ${Math.round(totals.kcal)}kcal | P: ${totals.protein.toFixed(1)}g | C: ${totals.carbs.toFixed(1)}g | G: ${totals.fat.toFixed(1)}g`
+        : '';
+
+    // Ouvintes da linha: ajustar gramas recalcula o subtotal; remover tira o item da lista
+    list.querySelectorAll('.meal-item').forEach(li => {
+        const idx = parseInt(li.getAttribute('data-index'));
+
+        li.querySelector('.meal-item-grams').addEventListener('input', (e) => {
+            const grams = parseFloat(e.target.value) || 0;
+            editingCustomDiet[mealKey].items[idx].grams = grams;
+            const newTotals = calculateMealTotals(editingCustomDiet[mealKey].items);
+            totalsEl.innerText = `Total: ${Math.round(newTotals.kcal)}kcal | P: ${newTotals.protein.toFixed(1)}g | C: ${newTotals.carbs.toFixed(1)}g | G: ${newTotals.fat.toFixed(1)}g`;
+        });
+
+        li.querySelector('.btn-remove-meal-item').addEventListener('click', () => {
+            editingCustomDiet[mealKey].items.splice(idx, 1);
+            renderMealItemsList(block, mealKey);
+        });
+    });
+}
+
+/**
+ * Executa a busca de alimentos para o bloco de refeição informado e exibe os resultados
+ */
+async function handleFoodSearch(block) {
+    const input = block.querySelector('.food-search-input');
+    const resultsList = block.querySelector('.food-search-results');
+    const term = input.value.trim();
+
+    if (term.length < 2) {
+        resultsList.innerHTML = '<li class="search-status-msg">Digite pelo menos 2 caracteres.</li>';
+        return;
+    }
+
+    resultsList.innerHTML = '<li class="search-status-msg">Buscando...</li>';
+    const results = await searchFoods(term);
+
+    if (results === null) {
+        resultsList.innerHTML = '<li class="search-status-msg">Não foi possível buscar agora. Tente novamente.</li>';
+        return;
+    }
+    if (results.length === 0) {
+        resultsList.innerHTML = '<li class="search-status-msg">Nenhum alimento encontrado.</li>';
+        return;
+    }
+
+    resultsList.innerHTML = results.map((food, idx) => `
+        <li class="food-search-result-item" data-index="${idx}">
+            <span>${escapeHtml(food.name)}${food.brand ? ` <span style="color:var(--text-muted)">(${escapeHtml(food.brand)})</span>` : ''}</span>
+            <span class="food-search-result-kcal">${Math.round(food.kcal100)}kcal/100g</span>
+        </li>
+    `).join('');
+
+    const mealKey = block.getAttribute('data-meal');
+    resultsList.querySelectorAll('.food-search-result-item').forEach(li => {
+        const idx = parseInt(li.getAttribute('data-index'));
+        li.addEventListener('click', () => {
+            editingCustomDiet[mealKey].items.push({ ...results[idx], grams: 100 });
+            renderMealItemsList(block, mealKey);
+            resultsList.innerHTML = '';
+            input.value = '';
+        });
+    });
 }
 
 // ===================================================================
 // SISTEMA DE RESUMO DE DADOS DO HUB INICIAL
 // ===================================================================
 /**
- * Atualiza os indicadores rápidos exibidos na tela inicial (Hub)
+ * Atualiza o contador de treinos completados exibido na tela inicial (Hub)
  */
 function updateHubSummary() {
-    // 1. Atualiza contador de treinos completados (exercícios feitos)
     const checkBoxes = domElements.exercisesContainer ? domElements.exercisesContainer.querySelectorAll('.exercise-checkbox') : [];
     const totalCount = checkBoxes.length;
     let completedCount = 0;
-    
+
     checkBoxes.forEach(cb => {
         if (cb.checked) {
             completedCount++;
         }
     });
-    
+
     if (domElements.summaryWorkoutsDone) {
         domElements.summaryWorkoutsDone.innerText = `${completedCount}/${totalCount}`;
     }
-    
-    // 2. Atualiza último IMC calculado
-    const records = JSON.parse(localStorage.getItem('progressHistory')) || [];
-    if (domElements.summaryImcValue) {
-        if (records.length > 0) {
-            domElements.summaryImcValue.innerText = records[0].imc;
-        } else {
-            domElements.summaryImcValue.innerText = '--';
-        }
-    }
+}
+
+/**
+ * Atualiza o último IMC exibido no resumo do Hub a partir do cache de registros do Supabase
+ * @param {Array} records Lista de registros vinda do Supabase (ver progressRecordsCache)
+ */
+function updateHubSummaryImc(records) {
+    if (!domElements.summaryImcValue) return;
+    domElements.summaryImcValue.innerText = (records && records.length > 0) ? records[0].imc : '--';
 }
 
 // ===================================================================
@@ -1965,72 +2446,6 @@ async function controlSpotifyPlayback(action) {
     }
 }
 
-// Controle de estado para evitar conflitos quando o usuário arrasta o slider de volume
-let isUserDraggingVolume = false;
-let spotifyVolumeTimeout = null;
-
-/**
- * Altera o volume de reprodução activa do Spotify do usuário direcionando ao dispositivo específico
- * @param {number} volumePercent Porcentagem de volume (0 a 100)
- */
-async function setSpotifyVolume(volumePercent) {
-    // Tenta obter o ID do dispositivo ativo ou do último dispositivo usado
-    const deviceId = await obterDeviceIdSpotify();
-    const url = anexarDeviceId(`/me/player/volume?volume_percent=${volumePercent}`, deviceId);
-    
-    // Envia o ajuste de volume direcionando ao ID do dispositivo
-    const res = await callSpotifyApi(url, 'PUT');
-    if (res && !res.error) {
-        console.log(`Volume do Spotify ajustado para: ${volumePercent}%`);
-    } else {
-        // Trata erro caso o ajuste de volume falhe (por exemplo, a restrição de celulares iOS/Android)
-        if (res && res.error) {
-            const err = res.error;
-            if (err.status === 403 || err.reason === 'RESTRICTED_COMMAND' || (err.message && err.message.includes('volume'))) {
-                console.warn('A API do Spotify não permite controlar o volume de dispositivos celulares/móveis diretamente pelo navegador.');
-                return;
-            }
-        }
-        console.warn('Não foi possível ajustar o volume. Verifique se o player está ativo.');
-    }
-}
-
-/**
- * Atualiza instantaneamente a interface de volume e agenda a chamada de API com debounce
- * @param {number} volumePercent Porcentagem de volume (0 a 100)
- */
-function debouncedSetSpotifyVolume(volumePercent) {
-    isUserDraggingVolume = true;
-    
-    // Atualiza o valor do texto de volume na UI instantaneamente
-    if (domElements.spotifyVolumeValue) {
-        domElements.spotifyVolumeValue.innerText = `${volumePercent}%`;
-    }
-    
-    // Altera dinamicamente a opacidade das ondas sonoras do ícone de volume
-    const iconLow = document.getElementById('spotify-volume-wave-low');
-    const iconHigh = document.getElementById('spotify-volume-wave-high');
-    if (iconLow && iconHigh) {
-        if (volumePercent === 0) {
-            iconLow.style.opacity = '0';
-            iconHigh.style.opacity = '0';
-        } else if (volumePercent < 50) {
-            iconLow.style.opacity = '1';
-            iconHigh.style.opacity = '0';
-        } else {
-            iconLow.style.opacity = '1';
-            iconHigh.style.opacity = '1';
-        }
-    }
-
-    // Agenda o envio da requisição à API do Spotify após 300ms de inatividade no slider
-    clearTimeout(spotifyVolumeTimeout);
-    spotifyVolumeTimeout = setTimeout(async () => {
-        await setSpotifyVolume(volumePercent);
-        isUserDraggingVolume = false; // Devolve o controle de atualização para o polling de status
-    }, 300);
-}
-
 /**
  * Verifica o que está tocando no momento no Spotify do usuário (Polling do Player completo)
  */
@@ -2064,33 +2479,6 @@ async function fetchSpotifyCurrentlyPlaying() {
             domElements.spotifyPlayIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`; // Ícone play
             domElements.spotifyMediaToggle.setAttribute('data-action', 'play');
         }
-        
-        // Atualiza o slider de volume com o volume real do dispositivo (apenas se o usuário não estiver arrastando)
-        if (!isUserDraggingVolume && data.device && data.device.volume_percent !== undefined) {
-            const vol = data.device.volume_percent;
-            if (domElements.spotifyVolumeSlider) {
-                domElements.spotifyVolumeSlider.value = vol;
-            }
-            if (domElements.spotifyVolumeValue) {
-                domElements.spotifyVolumeValue.innerText = `${vol}%`;
-            }
-            
-            // Atualiza o estado visual das ondas no ícone de volume do widget
-            const iconLow = document.getElementById('spotify-volume-wave-low');
-            const iconHigh = document.getElementById('spotify-volume-wave-high');
-            if (iconLow && iconHigh) {
-                if (vol === 0) {
-                    iconLow.style.opacity = '0';
-                    iconHigh.style.opacity = '0';
-                } else if (vol < 50) {
-                    iconLow.style.opacity = '1';
-                    iconHigh.style.opacity = '0';
-                } else {
-                    iconLow.style.opacity = '1';
-                    iconHigh.style.opacity = '1';
-                }
-            }
-        }
     } else {
         // Estado inicial de inatividade
         domElements.spotifyTrackTitle.innerText = 'Nenhuma faixa tocando';
@@ -2104,6 +2492,47 @@ async function fetchSpotifyCurrentlyPlaying() {
 // CONFIGURAÇÃO DOS ESCUTADORES DE EVENTOS DO DOM PRINCIPAIS
 // ===================================================================
 function initializeEventListeners() {
+    // 0. Escutadores da tela de Autenticação (Supabase Auth)
+    if (domElements.formAuth) {
+        domElements.formAuth.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearAuthError();
+
+            const email = domElements.inputAuthEmail.value.trim();
+            const password = domElements.inputAuthPassword.value;
+            const originalLabel = domElements.btnAuthSubmit.innerText;
+            domElements.btnAuthSubmit.disabled = true;
+            domElements.btnAuthSubmit.innerText = 'Aguarde...';
+
+            try {
+                if (authMode === 'signup') {
+                    await handleSignUp(email, password);
+                    showAuthError('Conta criada! Se a confirmação de e-mail estiver ativa no projeto, verifique sua caixa de entrada antes de entrar.');
+                } else {
+                    await handleSignIn(email, password);
+                    await onAuthenticated();
+                }
+            } catch (err) {
+                showAuthError(err.message || 'Não foi possível autenticar. Tente novamente.');
+            } finally {
+                domElements.btnAuthSubmit.disabled = false;
+                domElements.btnAuthSubmit.innerText = originalLabel;
+            }
+        });
+    }
+
+    if (domElements.btnAuthToggleMode) {
+        domElements.btnAuthToggleMode.addEventListener('click', toggleAuthMode);
+    }
+
+    if (domElements.btnLogout) {
+        domElements.btnLogout.addEventListener('click', () => {
+            if (confirm('Deseja realmente sair da sua conta?')) {
+                handleSignOut();
+            }
+        });
+    }
+
     // 1. Escutadores para transições do Hub SPA
     domElements.cardWorkouts.addEventListener('click', () => switchView('workouts'));
     domElements.cardProgress.addEventListener('click', () => switchView('progress'));
@@ -2183,15 +2612,16 @@ function initializeEventListeners() {
     
     // 4. Ouvinte de submissão do formulário de Progresso e IMC
     if (domElements.formProgress) {
-        domElements.formProgress.addEventListener('submit', (e) => {
+        domElements.formProgress.addEventListener('submit', async (e) => {
             e.preventDefault();
             const w = parseFloat(domElements.inputWeight.value);
             const h = parseInt(domElements.inputHeight.value);
             const t = parseInt(domElements.inputTime.value);
             const c = parseInt(domElements.inputCalories.value);
-            
-            saveProgressRecord(w, h, t, c);
-            
+
+            await saveProgressRecord(w, h, t, c);
+            await refreshProgressUI();
+
             // Limpa campos do form e mostra aviso
             domElements.inputWeight.value = '';
             domElements.inputHeight.value = '';
@@ -2215,42 +2645,61 @@ function initializeEventListeners() {
     // Ouvintes para o modal de edição de Dieta Personalizada
     if (domElements.btnOpenCustomDietModal) {
         domElements.btnOpenCustomDietModal.addEventListener('click', () => {
-            const customDiet = JSON.parse(localStorage.getItem('customDiet')) || {};
-            domElements.dietBreakfast.value = customDiet.breakfast || '';
-            domElements.dietLunch.value = customDiet.lunch || '';
-            domElements.dietSnack.value = customDiet.snack || '';
-            domElements.dietDinner.value = customDiet.dinner || '';
-            
+            editingCustomDiet = getCustomDiet();
+            renderMealBuilders();
             domElements.modalCustomDiet.style.display = 'flex';
         });
     }
-    
+
     if (domElements.btnCloseDietModal) {
         domElements.btnCloseDietModal.addEventListener('click', () => {
             domElements.modalCustomDiet.style.display = 'none';
         });
     }
-    
+
     if (domElements.formCustomDiet) {
+        // Botões de busca de alimentos (um por refeição) e tecla Enter no campo de busca
+        domElements.formCustomDiet.querySelectorAll('.meal-builder').forEach(block => {
+            block.querySelector('.btn-food-search').addEventListener('click', () => handleFoodSearch(block));
+            block.querySelector('.food-search-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Evita submeter o formulário ao buscar com Enter
+                    handleFoodSearch(block);
+                }
+            });
+        });
+
         domElements.formCustomDiet.addEventListener('submit', (e) => {
             e.preventDefault();
-            const customDiet = {
-                breakfast: domElements.dietBreakfast.value,
-                lunch: domElements.dietLunch.value,
-                snack: domElements.dietSnack.value,
-                dinner: domElements.dietDinner.value
-            };
-            localStorage.setItem('customDiet', JSON.stringify(customDiet));
+
+            // Coleta as observações digitadas em cada refeição antes de salvar
+            domElements.formCustomDiet.querySelectorAll('.meal-builder').forEach(block => {
+                const mealKey = block.getAttribute('data-meal');
+                editingCustomDiet[mealKey].notes = block.querySelector('.meal-notes').value;
+            });
+
+            saveCustomDiet(editingCustomDiet);
             domElements.modalCustomDiet.style.display = 'none';
             renderCustomDiet();
         });
     }
-    
+
     // 6. Ouvintes para o modal de criação de Treinos Customizados
     if (domElements.btnOpenCustomWorkoutModal) {
         domElements.btnOpenCustomWorkoutModal.addEventListener('click', () => {
-            // Abre o modal de treino
+            // Abre o modal de treino e prepara o buscador de exercícios do Wger
+            renderWgerCategoryButtons();
+            domElements.wgerResultsList.innerHTML = '';
             domElements.modalCustomWorkout.style.display = 'flex';
+        });
+    }
+
+    // Delegação de evento nos botões de categoria do Wger (renderizados dinamicamente)
+    if (domElements.wgerCategoryButtons) {
+        domElements.wgerCategoryButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.wger-category-btn');
+            if (!btn) return;
+            selectWgerCategory(btn.getAttribute('data-category'), btn);
         });
     }
     
@@ -2395,13 +2844,6 @@ function initializeEventListeners() {
         });
     }
     
-    // Ouvinte para controle de volume do Spotify com controle de arrastar para evitar conflito com polling
-    if (domElements.spotifyVolumeSlider) {
-        domElements.spotifyVolumeSlider.addEventListener('input', (e) => {
-            const vol = parseInt(e.target.value);
-            debouncedSetSpotifyVolume(vol);
-        });
-    }
 }
 
 // Configuração do Client ID do Spotify (criado no painel do Spotify Developer pelo usuário)
@@ -2420,14 +2862,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Configura o widget do Spotify
     inicializarSpotifyWidget();
-    
-    // Aplica gênero ativo
+
+    // Aplica o tema de gênero ativo (independe de autenticação)
     switchGender(activeGender);
-    
-    // Vai para a tela inicial (Hub) por padrão
-    switchView('hub');
-    
+
     // Garante que o timer inicie limpo e atualizado
     timerTimeLeft = 0;
     updateTimerUI();
+
+    // Verifica se já existe uma sessão Supabase ativa antes de liberar o restante do app;
+    // caso contrário, mantém a tela de login/cadastro (view-auth) visível
+    initAuthGate();
 });

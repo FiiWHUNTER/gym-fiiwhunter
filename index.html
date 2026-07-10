@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <!-- Meta tag para garantir o correto redimensionamento em dispositivos móveis (responsividade) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Treino Semanal | Fitness Planner</title>
+    <title>FitTrack | Treino Semanal</title>
     <!-- Link para a folha de estilo CSS personalizada -->
-    <link rel="stylesheet" href="css/style.css?v=1.0.3">
+    <link rel="stylesheet" href="css/style.css?v=1.1.0">
 </head>
 <body class="theme-male"> <!-- Inicia com o tema masculino por padrão -->
 
@@ -23,19 +23,57 @@
         </button>
         <!-- Título da seção ativa na barra de navegação -->
         <span class="nav-section-title" id="nav-title-text">Treinos</span>
+        <!-- Botão para encerrar a sessão autenticada no Supabase -->
+        <button id="btn-logout" class="nav-back-btn" aria-label="Sair da conta">
+            Sair
+        </button>
         <!-- Logo minimalista do aplicativo -->
-        <div class="nav-logo">FiiW</div>
+        <div class="nav-logo">FitTrack</div>
     </nav>
 
     <div class="app-container">
-        
+
+        <!-- ===================================================================
+             VIEW 0: AUTENTICAÇÃO (LOGIN / CADASTRO VIA SUPABASE AUTH)
+             =================================================================== -->
+        <section id="view-auth" class="app-view active">
+            <div class="auth-panel">
+                <div class="logo-section">
+                    <h1>FitTrack</h1>
+                    <p id="auth-subtitle">Entre com sua conta para acessar seu treino</p>
+                </div>
+
+                <form id="form-auth" class="progress-form">
+                    <div class="form-group">
+                        <label for="input-auth-email">E-mail</label>
+                        <input type="email" id="input-auth-email" placeholder="seu@email.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="input-auth-password">Senha</label>
+                        <input type="password" id="input-auth-password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="current-password">
+                    </div>
+
+                    <!-- Área para exibir mensagens de erro ou status de carregamento -->
+                    <p class="auth-error-msg" id="auth-error-msg" style="display: none;"></p>
+
+                    <button type="submit" class="btn-submit-form" id="btn-auth-submit">Entrar</button>
+                </form>
+
+                <!-- Link para alternar entre os modos "Entrar" e "Criar Conta" -->
+                <p class="auth-toggle-link">
+                    <span id="auth-toggle-text">Ainda não tem conta?</span>
+                    <button type="button" id="btn-auth-toggle-mode">Criar Conta</button>
+                </p>
+            </div>
+        </section>
+
         <!-- ===================================================================
              VIEW 1: HUB INICIAL (TELA DE ENTRADA DO APLICATIVO)
              =================================================================== -->
-        <section id="view-hub" class="app-view active">
+        <section id="view-hub" class="app-view hidden">
             <header>
                 <div class="logo-section">
-                    <h1>FiiW HUNTER</h1>
+                    <h1>FitTrack</h1>
                     <p>Seu cronograma de treinamento e performance de alta performance</p>
                 </div>
                 
@@ -344,6 +382,8 @@
                     </svg>
                     <!-- Texto do título envelopado para controle de ocultação responsiva no celular -->
                     <span class="timer-title-text">Cronômetro de Descanso</span>
+                    <!-- Elemento de tempo dedicado para ser exibido apenas na visualização de bolha colapsada no celular -->
+                    <span class="timer-bubble-time" id="timer-bubble-time" style="display: none;">00:00</span>
                 </span>
                 <!-- Botão para alternar visualização -->
                 <button class="timer-toggle-btn" id="timer-btn-expand" aria-label="Expandir/Minimizar Cronômetro" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">
@@ -460,17 +500,6 @@
                             </svg>
                         </button>
                     </div>
-
-                    <!-- Controle de volume integrado -->
-                    <div class="spotify-volume-container">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" class="spotify-volume-icon">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" id="spotify-volume-wave-low" style="transition: opacity 0.2s ease;"></path>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" id="spotify-volume-wave-high" style="transition: opacity 0.2s ease;"></path>
-                        </svg>
-                        <input type="range" id="spotify-volume-slider" min="0" max="100" value="50" class="spotify-volume-slider" aria-label="Volume">
-                        <span id="spotify-volume-value" class="spotify-volume-value">50%</span>
-                    </div>
                 </div>
             </div>
         </section>
@@ -495,7 +524,19 @@
                     <label for="input-custom-info">Instruções / Notas do Treino</label>
                     <input type="text" id="input-custom-info" placeholder="Ex: Foco em cadência e contração lenta">
                 </div>
-                
+
+                <!-- Buscador de exercícios reais no banco de dados aberto Wger, organizado por grupo muscular -->
+                <div class="wger-search-panel">
+                    <span class="fields-title">Buscar no Banco de Exercícios (Wger)</span>
+                    <p class="wger-search-hint">Escolha um grupo muscular para ver exercícios reais e adicioná-los ao treino.</p>
+                    <div class="wger-category-buttons" id="wger-category-buttons">
+                        <!-- Botões de categoria injetados dinamicamente pelo JS -->
+                    </div>
+                    <ul class="wger-results-list" id="wger-results-list">
+                        <!-- Resultados da categoria selecionada injetados dinamicamente pelo JS -->
+                    </ul>
+                </div>
+
                 <!-- Campos dinâmicos para adicionar exercícios adicionais -->
                 <div class="modal-dynamic-fields">
                     <span class="fields-title">Exercícios do Treino</span>
@@ -527,28 +568,66 @@
                 <button class="btn-close-modal" id="btn-close-diet-modal">&times;</button>
             </div>
             <form id="form-custom-diet">
-                <div class="form-group">
-                    <label for="diet-breakfast">Café da Manhã</label>
-                    <textarea id="diet-breakfast" placeholder="Ex: 3 ovos inteiros mexidos, 2 fatias de pão integral, café preto." rows="2"></textarea>
+                <!-- Cada bloco de refeição usa o mesmo padrão (data-meal), permitindo que o JS trate
+                     os 4 blocos com um único conjunto de listeners por delegação de evento -->
+                <div class="meal-builder" data-meal="breakfast">
+                    <label>Café da Manhã</label>
+                    <div class="food-search-row">
+                        <input type="text" class="food-search-input" placeholder="Buscar alimento (ex: ovo, pão integral)...">
+                        <button type="button" class="btn-food-search">Buscar</button>
+                    </div>
+                    <ul class="food-search-results"></ul>
+                    <ul class="meal-items-list"></ul>
+                    <div class="meal-totals"></div>
+                    <textarea class="meal-notes" placeholder="Observações adicionais (opcional)" rows="2"></textarea>
                 </div>
-                <div class="form-group">
-                    <label for="diet-lunch">Almoço</label>
-                    <textarea id="diet-lunch" placeholder="Ex: 150g de peito de frango grelhado, 150g de arroz integral, feijão e salada verde." rows="2"></textarea>
+
+                <div class="meal-builder" data-meal="lunch">
+                    <label>Almoço</label>
+                    <div class="food-search-row">
+                        <input type="text" class="food-search-input" placeholder="Buscar alimento (ex: frango, arroz integral)...">
+                        <button type="button" class="btn-food-search">Buscar</button>
+                    </div>
+                    <ul class="food-search-results"></ul>
+                    <ul class="meal-items-list"></ul>
+                    <div class="meal-totals"></div>
+                    <textarea class="meal-notes" placeholder="Observações adicionais (opcional)" rows="2"></textarea>
                 </div>
-                <div class="form-group">
-                    <label for="diet-snack">Café da Tarde / Lanche da Tarde</label>
-                    <textarea id="diet-snack" placeholder="Ex: 30g de Whey Protein batido com 1 banana e aveia." rows="2"></textarea>
+
+                <div class="meal-builder" data-meal="snack">
+                    <label>Café da Tarde / Lanche da Tarde</label>
+                    <div class="food-search-row">
+                        <input type="text" class="food-search-input" placeholder="Buscar alimento (ex: whey protein, banana)...">
+                        <button type="button" class="btn-food-search">Buscar</button>
+                    </div>
+                    <ul class="food-search-results"></ul>
+                    <ul class="meal-items-list"></ul>
+                    <div class="meal-totals"></div>
+                    <textarea class="meal-notes" placeholder="Observações adicionais (opcional)" rows="2"></textarea>
                 </div>
-                <div class="form-group">
-                    <label for="diet-dinner">Jantar / Última Refeição</label>
-                    <textarea id="diet-dinner" placeholder="Ex: 150g de filé de peixe grelhado com batata doce e brócolis." rows="2"></textarea>
+
+                <div class="meal-builder" data-meal="dinner">
+                    <label>Jantar / Última Refeição</label>
+                    <div class="food-search-row">
+                        <input type="text" class="food-search-input" placeholder="Buscar alimento (ex: peixe, batata doce)...">
+                        <button type="button" class="btn-food-search">Buscar</button>
+                    </div>
+                    <ul class="food-search-results"></ul>
+                    <ul class="meal-items-list"></ul>
+                    <div class="meal-totals"></div>
+                    <textarea class="meal-notes" placeholder="Observações adicionais (opcional)" rows="2"></textarea>
                 </div>
+
                 <button type="submit" class="btn-submit-form">Confirmar e Salvar Dieta</button>
             </form>
         </div>
     </div>
 
+    <!-- Cliente oficial do Supabase (Auth + Postgres) via CDN, sem necessidade de build -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chaves públicas de conexão com o projeto Supabase (ver supabase/schema.sql) -->
+    <script src="js/supabase-config.js"></script>
     <!-- Script de lógica e gerenciamento de estado injetado no fim do body -->
-    <script src="js/script.js?v=1.0.3"></script>
+    <script src="js/script.js?v=1.1.0"></script>
 </body>
 </html>

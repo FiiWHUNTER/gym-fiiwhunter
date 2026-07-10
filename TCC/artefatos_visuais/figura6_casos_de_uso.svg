@@ -1,0 +1,168 @@
+<!-- Define o elemento raiz do SVG de Casos de Uso com dimensões ideais para inclusão acadêmica -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 780" width="100%" height="100%">
+  <!-- Definições de estilos, sombras e marcadores para as conexões UML -->
+  <defs>
+    <!-- Filtro para adicionar sombreado leve e sutil nos elementos gráficos -->
+    <filter id="boxShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="1" dy="3" stdDeviation="3" flood-opacity="0.1" flood-color="#000000"/>
+    </filter>
+    <!-- Ponta de seta aberta usada na relação de inclusão (<<include>>) entre casos de uso -->
+    <marker id="includeArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#92400e" stroke-width="1.5"/>
+    </marker>
+  </defs>
+
+  <!-- Retângulo de fundo branco garantindo visibilidade ideal na impressão do documento de TCC -->
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+  <!-- Título do Diagrama de Casos de Uso -->
+  <text x="400" y="35" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="bold" fill="#0f172a" text-anchor="middle">
+    DIAGRAMA DE CASOS DE USO UML - FITTRACK
+  </text>
+
+  <!-- Subtítulo contendo o escopo do comportamento funcional do usuário no sistema -->
+  <text x="400" y="55" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">
+    Representação das Ações do Ator Principal (Usuário / Praticante)
+  </text>
+
+  <!-- ===================================================================
+       REPRESENTAÇÃO DO ATOR UML: Praticante de Musculação
+       =================================================================== -->
+  <!-- Comentário do Bloco: Desenha o "stickman" padrão da UML para representar o ator físico.
+       Reposicionado verticalmente (translate y=310) para ficar centralizado em relação à
+       fronteira do sistema, agora mais alta por conta dos dois novos casos de uso (UC0 e UC9) -->
+  <g transform="translate(60, 310)">
+    <!-- Cabeça do Ator -->
+    <circle cx="30" cy="30" r="15" fill="#ffffff" stroke="#1e3a8a" stroke-width="3" filter="url(#boxShadow)"/>
+    <!-- Tronco/Corpo -->
+    <line x1="30" y1="45" x2="30" y2="105" stroke="#1e3a8a" stroke-width="3"/>
+    <!-- Braços -->
+    <line x1="5" y1="65" x2="55" y2="65" stroke="#1e3a8a" stroke-width="3"/>
+    <!-- Perna Esquerda -->
+    <line x1="30" y1="105" x2="10" y2="155" stroke="#1e3a8a" stroke-width="3"/>
+    <!-- Perna Direita -->
+    <line x1="30" y1="105" x2="50" y2="155" stroke="#1e3a8a" stroke-width="3"/>
+    <!-- Nome do Ator abaixo da figura -->
+    <text x="30" y="180" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle">
+      Praticante de Musculação
+    </text>
+    <text x="30" y="195" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">
+      (Usuário do Sistema)
+    </text>
+  </g>
+
+  <!-- ===================================================================
+       RETÂNGULO DELIMITADOR DO SISTEMA (FitTrack App)
+       =================================================================== -->
+  <!-- Comentário do Bloco: Representa a fronteira da aplicação (System Boundary).
+       Altura ampliada (650) para acomodar os dez casos de uso -->
+  <g transform="translate(230, 80)" filter="url(#boxShadow)">
+    <rect width="520" height="650" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+    <text x="260" y="30" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#334155" text-anchor="middle">
+      Fronteira da Aplicação: FitTrack
+    </text>
+  </g>
+
+  <!-- ===================================================================
+       ELIPSES DOS CASOS DE USO (UC - Use Cases)
+       =================================================================== -->
+  <!-- Comentário do Bloco: Os blocos a seguir desenham os Casos de Uso e seus textos centralizados -->
+
+  <!-- UC0: Autenticar-se no Sistema (pré-condição de acesso a todos os demais casos de uso,
+       introduzida com a integração do Supabase Auth). Destacado em âmbar por ser um caso de
+       uso de controle de sessão/segurança, e não uma regra de negócio de treino -->
+  <g transform="translate(260, 120)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <text x="140" y="22" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#92400e" text-anchor="middle">Autenticar-se no Sistema</text>
+    <text x="140" y="34" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="#92400e" text-anchor="middle">(Login / Cadastro)</text>
+  </g>
+
+  <!-- UC1: Selecionar Nível e Visualizar Treino -->
+  <g transform="translate(260, 180)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Visualizar Treino Semanal por Nível</text>
+  </g>
+
+  <!-- UC2: Personalizar Tabela de Treinos -->
+  <g transform="translate(260, 240)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Criar Treino Customizado</text>
+  </g>
+
+  <!-- UC3: Calcular IMC e Classificação -->
+  <g transform="translate(260, 300)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Calcular e Classificar IMC</text>
+  </g>
+
+  <!-- UC4: Registrar Evolução Semanal -->
+  <g transform="translate(260, 360)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Registrar Medidas (Evolução)</text>
+  </g>
+
+  <!-- UC5: Visualizar Dietas Sugestivas -->
+  <g transform="translate(260, 420)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Visualizar Sugestões Alimentares</text>
+  </g>
+
+  <!-- UC6: Editar Refeições Personalizadas -->
+  <g transform="translate(260, 480)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Customizar Plano Alimentar</text>
+  </g>
+
+  <!-- UC7: Controlar Tempo de Descanso -->
+  <g transform="translate(260, 540)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Utilizar Cronômetro de Descanso</text>
+  </g>
+
+  <!-- UC8: Controlar Músicas (Spotify) -->
+  <g transform="translate(260, 600)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Controlar Músicas (Spotify Connect)</text>
+  </g>
+
+  <!-- UC9: Encerrar Sessão (Logout), introduzido junto com o Supabase Auth. Destacado em âmbar
+       pelo mesmo motivo de UC0: é controle de sessão, não regra de negócio de treino -->
+  <g transform="translate(260, 660)">
+    <ellipse cx="140" cy="25" rx="120" ry="22" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <text x="140" y="28" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#92400e" text-anchor="middle">Encerrar Sessão (Logout)</text>
+  </g>
+
+  <!-- ===================================================================
+       RELAÇÃO <<include>>: AUTENTICAÇÃO COMO PRÉ-CONDIÇÃO
+       =================================================================== -->
+  <!-- Comentário do Bloco: Seta tracejada indicando que UC1 inclui obrigatoriamente UC0.
+       Por clareza visual essa relação não é redesenhada para UC2-UC8, mas se aplica
+       igualmente a todos eles — ver nota explicativa abaixo do diagrama -->
+  <line x1="400" y1="183" x2="400" y2="170" stroke="#92400e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#includeArrow)"/>
+  <text x="412" y="180" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="8" font-style="italic" fill="#92400e">«include»</text>
+
+  <!-- ===================================================================
+       LINHAS DE ASSOCIAÇÃO DO ATOR PARA OS CASOS DE USO
+       =================================================================== -->
+  <!-- Comentário do Bloco: Conecta os braços/tronco do stickman (x=115, y=375) a cada Caso de Uso à direita -->
+  <line x1="115" y1="375" x2="275" y2="142" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="202" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="262" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="322" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="382" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="442" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="502" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="562" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="622" stroke="#475569" stroke-width="1.5"/>
+  <line x1="115" y1="375" x2="275" y2="682" stroke="#475569" stroke-width="1.5"/>
+
+  <!-- ===================================================================
+       NOTA EXPLICATIVA SOBRE A RELAÇÃO DE INCLUSÃO
+       =================================================================== -->
+  <text x="400" y="750" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-style="italic" fill="#64748b" text-anchor="middle">
+    Nota: por ser pré-condição de acesso ao sistema, UC0 (Autenticar-se) possui relação «include»
+  </text>
+  <text x="400" y="765" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-style="italic" fill="#64748b" text-anchor="middle">
+    com todos os demais casos de uso, ainda que apenas UC1 esteja representado graficamente por clareza visual.
+  </text>
+</svg>
